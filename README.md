@@ -43,6 +43,18 @@ end
 ThreshCopy.LoadHandler = ThreshCopy.LoadHandler or registerAnonymousEventHandler("sysLoadEvent", "ThreshCopy:Loaded")
 ```
 
+### Semantic Versioning
+The Mupdate system requires the use of semantic versioning (SemVer) for package version numbers. Semantic versioning follows the format MAJOR.MINOR.PATCH, where:
+
+* `MAJOR` version increments indicate incompatible API changes,
+* `MINOR` version increments add functionality in a backward-compatible manner, and
+* `PATCH` version increments include backward-compatible bug fixes.
+#### Example:
+* `1.0.0` -> Initial release
+* `1.1.0` -> New feature added
+* `1.1.1` -> Bug fix
+* `2.0.0` -> Breaking change introduced
+
 ### Variables:
 * `download_path`: The URL path where the package files are hosted.
 * `package_name`: The name of your package.
