@@ -19,6 +19,13 @@ Special thanks to [@demonnic](https://github.com/demonnic/) for providing additi
 ### 2. Integration
 In your package script, require the Mupdate module and instantiate it with the necessary options.
 
+### Variables:
+* `download_path`: The URL path where the package files are hosted.
+* `package_name`: The name of your package.
+* `version_check_download`: The file name of the version check file on the server.
+* `version_check_save`: The file name to save the downloaded version check file locally.
+* `debug_mode`: Boolean flag to enable or disable debug mode for detailed logging.
+
 #### Example Implementation:
 ```lua
 -- Auto Updater
@@ -41,6 +48,10 @@ end
 ThreshCopy.LoadHandler = ThreshCopy.LoadHandler or registerAnonymousEventHandler("sysLoadEvent", "ThreshCopy:Loaded")
 ```
 
+### Version Comparison
+* Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar format. So, this must be set on your package.
+* Mupdate downloads the version file from the same location that hosts your `.mpackage` file, and its contents must simply contain the updated version in the SemVar format.
+
 ### Semantic Versioning
 The Mupdate system requires the use of semantic versioning (SemVer) for package version numbers. Semantic versioning follows the format MAJOR.MINOR.PATCH, where:
 
@@ -52,14 +63,3 @@ The Mupdate system requires the use of semantic versioning (SemVer) for package 
 * `1.1.0` -> New feature added
 * `1.1.1` -> Bug fix
 * `2.0.0` -> Breaking change introduced
-
-### Variables:
-* `download_path`: The URL path where the package files are hosted.
-* `package_name`: The name of your package.
-* `version_check_download`: The file name of the version check file on the server.
-* `version_check_save`: The file name to save the downloaded version check file locally.
-* `debug_mode`: Boolean flag to enable or disable debug mode for detailed logging.
-
-### Version Comparison
-* Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar (above) format. So, this must be set on your package.
-* Mupdate downloads the version file from the same location that hosts your `.mpackage` file, and its contents must simply contain the updated version in the SemVar format.
