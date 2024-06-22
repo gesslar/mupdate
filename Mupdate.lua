@@ -99,23 +99,21 @@ end
 
 function Mupdate:new(options)
     options = options or {}
-    local me = table.deepcopy(options)
-    setmetatable(me, self)
-    self.__index = self
 
-    -- Test to see if any of the required fields are nil or not the right type and error if so
-    for field, field_type in pairs(self.required) do
-        if me[field] == nil then
-            error("Mupdate:new() - Required field '" .. field .. "' is nil")
-        elseif type(me[field]) ~= field_type then
-            error("Mupdate:new() - Required field '" .. field .. "' is not a " .. field_type)
+    -- Test to see if any of the required fields are nil and error if so
+    local required = self.required
+    for k, v in pairs(required) do
+        if not options[k] then
+            error("Mupdate:new() - Required field " .. k .. " is missing")
+        end
+        if type(options[k]) ~= v then
+            error("Mupdate:new() - Required field " .. k .. " is not of type " .. v)
         end
     end
 
-    -- Set version_check_save to version_check_download if it is nil
-    if me.version_check_save == nil then
-        me.version_check_save = me.version_check_download
-    end
+    local me = table.deepcopy(options)
+    setmetatable(me, self)
+    self.__index = self
 
     -- Now that we know we have all the required fields, we can setup the fields
     -- that are derived from the required fields
@@ -123,6 +121,9 @@ function Mupdate:new(options)
     me.temp_file_path = getMudletHomeDir() .. "/" .. me.package_name .. "_temp" .. "/"
     me.package_url = me.download_path .. me.package_name .. ".mpackage"
     me.version_url = me.download_path .. me.version_check_download
+    if not me.version_check_save then
+        me.version_check_save = me.version_check_download
+    end
 
     local packageInfo = getPackageInfo(me.package_name)
     if not packageInfo then
