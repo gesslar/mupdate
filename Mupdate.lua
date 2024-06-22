@@ -72,6 +72,12 @@
     - 2.0.0 -> Breaking change introduced
 ]] --
 
+local MupdateRequired = {
+    download_path = "string",
+    package_name = "string",
+    version_check_download = "string",
+}
+
 Mupdate = Mupdate or {
     download_path = nil,
     package_name = nil,
@@ -84,11 +90,6 @@ Mupdate = Mupdate or {
     downloading = false,
     download_queue = {}, -- Ensure this is here in case the initialization function is missed
     debug_mode = false, -- Add a flag for debugging mode
-    required = {
-        download_path = "string",
-        package_name = "string",
-        version_check_download = "string",
-    },
 }
 
 function Mupdate:Debug(text)
@@ -101,8 +102,7 @@ function Mupdate:new(options)
     options = options or {}
 
     -- Test to see if any of the required fields are nil and error if so
-    local required = self.required
-    for k, v in pairs(required) do
+    for k, v in pairs(MupdateRequired) do
         if not options[k] then
             error("Mupdate:new() - Required field " .. k .. " is missing")
         end
