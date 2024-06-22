@@ -1,7 +1,7 @@
 # Mupdate Auto-Updater Module
 
 ## Description
-This module provides an auto-updater for packages within the MUD client, Mudlet. It automates the process of checking for new versions of a package, downloading updates, and installing them.
+This module provides an auto-updater for packages within the MUD client, [Mudlet](https://github.com/Mudlet/Mudlet/). It automates the process of checking for new versions of a package, downloading updates, and installing them.
 
 ## Acknowledgements
 This module was essentially ripped off from the [MUDKIP_Mud2](https://github.com/11BelowStudio/MUDKIP_Mud2) package from [@11BelowStudio](https://github.com/11BelowStudio/), and refactored.
