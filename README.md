@@ -32,7 +32,6 @@ In your package script, require the Mupdate module and instantiate it with the n
 function ThreshCopy:Loaded()
     -- If using muddler
     -- require("ThreshCopy\\Mupdate")
-    if not Mupdate then return end
 
     local updater = Mupdate:new({
         download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",

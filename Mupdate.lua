@@ -266,9 +266,10 @@ function Mupdate:finish_download(_, path)
     self:Debug("Mupdate:finish_download() - Finished downloading: " .. path)
     self:start_next_download()
     self:Debug("Mupdate:finish_download() - Checking if downloaded file is version info file")
+    self:Debug("Mupdate:finish_download() - " .. path)
 
     -- Check if the downloaded file is the version info file
-    if string.find(path, self.file_path .. self.version_check_save) then
+    if string.find(path, self.version_check_save) then
         self:Debug("Mupdate:finish_download() - Downloaded file is version info file, proceeding to check versions")
         self:check_versions()
     elseif string.find(path, ".mpackage") then
