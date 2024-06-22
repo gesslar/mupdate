@@ -13,7 +13,7 @@ Special thanks to [@demonnic](https://github.com/demonnic/) for providing additi
 ## Instructions for Use
 
 ### 1. Placement
-- **Using Muddler:** Put the `Mupdate.lua` file in your project's resources directory.
+- **Using [Muddler](https://github.com/demonnic/muddler):** Put the `Mupdate.lua` file in your project's resources directory.
 - **Developing Directly in Mudlet:** Add the `Mupdate.lua` file to your Mudlet package's Script Group within Mudlet, and ensure that it is higher than the script that will be calling it.
 
 ### 2. Integration
