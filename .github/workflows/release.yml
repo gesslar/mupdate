@@ -31,12 +31,19 @@ jobs:
       if: github.repository_owner == 'gesslar'
       run: echo "This is the correct repository owner. Proceeding with release."
 
-    - name: Check if PR was merged
-      if: github.event.pull_request.merged == true
-      run: echo "Pull request was merged. Proceeding with release."
+    - name: Determine if it's a merged PR or direct commit
+      id: check_pr
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          echo "IS_MERGED=false" >> $GITHUB_ENV
+        elif [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+          echo "IS_MERGED=true" >> $GITHUB_ENV
+        else
+          echo "IS_MERGED=false" >> $GITHUB_ENV
+      shell: bash
 
     - name: Create Release
-      if: github.repository_owner == 'gesslar' && github.event.pull_request.merged == true
+      if: github.repository_owner == 'gesslar' && (github.event_name == 'push' || env.IS_MERGED == 'true')
       uses: ncipollo/release-action@v1
       with:
         artifacts: "LICENSE,Mupdate.lua,README.md,version.txt"
