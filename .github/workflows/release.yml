@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main  # Change this to your default branch if it's not main
+  pull_request:
+    types: [closed]
+    branches:
+      - main  # Only trigger on pull requests to the main branch
 
 jobs:
   create_release:
@@ -23,7 +27,16 @@ jobs:
     - name: Create version.txt
       run: echo ${{ env.DATE_TAG }} > version.txt
 
+    - name: Check repository owner
+      if: github.repository_owner == 'gesslar'
+      run: echo "This is the correct repository owner. Proceeding with release."
+
+    - name: Check if PR was merged
+      if: github.event.pull_request.merged == true
+      run: echo "Pull request was merged. Proceeding with release."
+
     - name: Create Release
+      if: github.repository_owner == 'gesslar' && github.event.pull_request.merged == true
       uses: ncipollo/release-action@v1
       with:
         artifacts: "LICENSE,Mupdate.lua,README.md,version.txt"
