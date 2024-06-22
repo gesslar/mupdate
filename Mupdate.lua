@@ -83,7 +83,12 @@ Mupdate = Mupdate or {
     initialized = false,
     downloading = false,
     download_queue = {}, -- Ensure this is here in case the initialization function is missed
-    debug_mode = false -- Add a flag for debugging mode
+    debug_mode = false, -- Add a flag for debugging mode
+    required = {
+        download_path = "string",
+        package_name = "string",
+        version_check_download = "string",
+    },
 }
 
 function Mupdate:Debug(text)
@@ -98,11 +103,18 @@ function Mupdate:new(options)
     setmetatable(me, self)
     self.__index = self
 
-    -- Test to see if any of the required fields are nil and error if so
-    for k, v in pairs(me) do
-        if v == nil then
-            error("Mupdate:new() - Required field " .. k .. " is nil")
+    -- Test to see if any of the required fields are nil or not the right type and error if so
+    for field, field_type in pairs(self.required) do
+        if me[field] == nil then
+            error("Mupdate:new() - Required field '" .. field .. "' is nil")
+        elseif type(me[field]) ~= field_type then
+            error("Mupdate:new() - Required field '" .. field .. "' is not a " .. field_type)
         end
+    end
+
+    -- Set version_check_save to version_check_download if it is nil
+    if me.version_check_save == nil then
+        me.version_check_save = me.version_check_download
     end
 
     -- Now that we know we have all the required fields, we can setup the fields
@@ -111,7 +123,6 @@ function Mupdate:new(options)
     me.temp_file_path = getMudletHomeDir() .. "/" .. me.package_name .. "_temp" .. "/"
     me.package_url = me.download_path .. me.package_name .. ".mpackage"
     me.version_url = me.download_path .. me.version_check_download
-    me.version_check_save = me.version_check_save
 
     local packageInfo = getPackageInfo(me.package_name)
     if not packageInfo then
