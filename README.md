@@ -4,13 +4,13 @@
 This module provides an auto-updater for packages within the MUD client, Mudlet. It automates the process of checking for new versions of a package, downloading updates, and installing them.
 
 ## Acknowledgements
-This module was heavily inspired by the MUDKIP_Mud2 package from @11BelowStudio, available at:
+This module was essentially ripped off from the MUDKIP_Mud2 package from [@11BelowStudio](https://github.com/11BelowStudio/), and refactored. The original is available at:
 [https://github.com/11BelowStudio/MUDKIP_Mud2](https://github.com/11BelowStudio/MUDKIP_Mud2)
 
 The core functionality of this auto-updater was adapted from the DSL PNP 4.0 Main Script by Zachary Hiland, originally shared on the Mudlet forums:
 [https://forums.mudlet.org/viewtopic.php?p=20504](https://forums.mudlet.org/viewtopic.php?p=20504)
 
-Special thanks to @demonnic for providing additional Lua code and guidance on package installation.
+Special thanks to [@demonnic](https://github.com/demonnic/) for providing additional Lua code and guidance on package installation.
 
 ## Instructions for Use
 
