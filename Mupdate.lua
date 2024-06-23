@@ -105,11 +105,12 @@ function Mupdate:Debug(text)
 end
 
 function Mupdate:Error(text)
-    cecho("<b><ansiLightRed>ERROR</b><reset> [" .. (self.package_name or "Mupdate") .. "] - " .. text .. "\n")
+    cecho(f"<red>[ ERROR ]<reset> <DarkOrange>{(self.package_name or \"Mupdate\")}<reset> - {text}\n")
 end
 
 function Mupdate:Info(text)
-    cecho("<b><ansiLightYellow>INFO</b><reset> [" .. (self.package_name or "Mupdate") .. "] - " .. text .. "\n")
+    cecho(f"<gold>[ INFO ]<reset> <DarkOrange>{(self.package_name or \"Mupdate\")}<reset> - {text}\n")
+
 end
 
 local function is_valid_regex(pattern)
