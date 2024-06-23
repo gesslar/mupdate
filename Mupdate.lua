@@ -92,6 +92,8 @@ Mupdate = Mupdate or {
     debug_mode = false, -- Add a flag for debugging mode
 }
 
+local downloadHandlerLabel, downloadErrorHandlerLabel
+
 function Mupdate:Debug(text)
     if self.debug_mode then
         debugc(text)
@@ -141,11 +143,14 @@ function Mupdate:new(options)
     me.download_queue = {} -- Ensure download_queue is initialized as an empty table
     me:Debug("Mupdate:new() - Initialized download_queue")
 
+    downloadHandlerLabel = f"DownloadComplete{me.package_name}"
     registerNamedEventHandler(me.package_name, "DownloadComplete", "sysDownloadDone", function(...)
-        me:eventHandler("sysDownloadDone", ...)
+        me:eventHandler(downloadHandlerLabel, ...)
     end)
+
+    downloadErrorHandlerLabel = f"DownloadError{me.package_name}"
     registerNamedEventHandler(me.package_name, "DownloadError", "sysDownloadError", function(...)
-        me:eventHandler("sysDownloadError", ...)
+        me:eventHandler(downloadErrorHandlerLabel, ...)
     end)
 
     return me
@@ -274,7 +279,7 @@ function Mupdate:queue_download(path, address)
     end
 end
 
-function Mupdate:finish_download(_, path)
+function Mupdate:finish_download(path)
     self:Debug("Mupdate:finish_download() - Finished downloading: " .. path)
     self:start_next_download()
     self:Debug("Mupdate:finish_download() - Checking if downloaded file is version info file")
@@ -294,17 +299,17 @@ function Mupdate:finish_download(_, path)
 end
 
 function Mupdate:fail_download(...)
-    cecho("\n<b><ansiLightRed>ERROR</b><reset> - failed downloading " .. arg[2] .. arg[1] .. "\n")
-    self:Debug("Mupdate:fail_download() - Failed to download: " .. arg[2] .. arg[1])
+    cecho(f"\n<b><ansiLightRed>ERROR</b><reset> [{self.package_name}] - Failed downloading {arg[2]}\n")
+    self:Debug(f"Mupdate:fail_download() {self.package_name} - Failed to download: {arg[2]}")
     self:start_next_download()
 end
 
 function Mupdate:update_package()
     lfs.mkdir(self.temp_file_path)
-    self:Debug("Mupdate:update_package() - Queuing download for package update")
+    self:Debug(f"Mupdate:update_package() - Queuing download for package update")
     self:queue_download(
-        self.temp_file_path .. self.package_name .. ".mpackage",
-        self.download_path .. self.package_name .. ".mpackage"
+        f"{self.temp_file_path}{self.package_name}.mpackage",
+        f"{self.download_path}{self.package_name}.mpackage"
     )
 end
 
@@ -313,11 +318,11 @@ function Mupdate:update_scripts()
     self:get_version_check()
 end
 
-function Mupdate:eventHandler(event, ...)
-    -- self:Debug("Mupdate:eventHandler() - Event: " .. event .. ", Args: " .. table.concat({...}, ", "))
-    if event == "sysDownloadDone" then
+function Mupdate:eventHandler(handlerLabel, ...)
+    self:Debug(f"Mupdate:eventHandler() {self.package_name} - Event: {handlerLabel}")
+    if handlerLabel == downloadHandlerLabel then
         self:finish_download(...)
-    elseif event == "sysDownloadError" then
+    elseif handlerLabel == downloadErrorHandlerLabel then
         self:fail_download(...)
     end
 end
@@ -372,7 +377,7 @@ function Mupdate:check_versions()
     self:Debug("Mupdate:check_versions() - Checking versions with file: " .. dl_path)
     local dl_file, dl_errors = self:fileOpen(dl_path, "read")
     if not dl_file then
-        cecho("\n<b><ansiLightRed>ERROR</b><reset> - Could not read remote version info file, aborting auto-update routine. (" .. dl_errors .. ")\n")
+        cecho(f"<b><ansiLightRed>ERROR</b><reset> [{self.package_name}] - Could not read remote version info file, aborting auto-update routine. (" .. dl_errors .. ")\n")
         self:Debug("Mupdate:check_versions() - Could not read remote version info file: " .. dl_errors)
         return
     end
