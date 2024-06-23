@@ -240,11 +240,7 @@ function Mupdate:finish_download(_, path)
     self:Debug("Mupdate:finish_download() - Checking if downloaded file is version info file")
     self:Debug("Mupdate:finish_download() - " .. path)
 
-    -- Check if the downloaded file is the version info file
-    if string.find(path, self.version_check_save) then
-        self:Debug("Mupdate:finish_download() - Downloaded file is version info file, proceeding to check versions")
-        self:check_versions()
-    elseif string.find(path, ".mpackage") then
+    if string.find(path, ".mpackage") then
         self:Debug("Mupdate:finish_download() - Downloaded file is mpackage, proceeding to load package mpackage")
         self:load_package_mpackage(path)
     elseif string.find(path, ".xml") then
@@ -287,7 +283,7 @@ function Mupdate:update_scripts()
 end
 
 function Mupdate:eventHandler(handlerLabel, ...)
-    self:Debug("Mupdate:eventHandler() [" .. self.package_name .. "] - Event: " .. handlerLabel)
+    self:Debug("Mupdate:eventHandler() - Event: " .. handlerLabel)
     if handlerLabel == downloadHandlerLabel then
         self:finish_download(...)
     elseif handlerLabel == downloadErrorHandlerLabel then
