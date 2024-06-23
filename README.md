@@ -22,9 +22,10 @@ In your package script, require the Mupdate module and instantiate it with the n
 ### Variables:
 * `download_path`: The URL path where the package files are hosted.
 * `package_name`: The name of your package.
-* `version_check_download`: The file name of the version check file on the server.
-* `version_check_save`: The file name to save the downloaded version check file locally.
-* `debug_mode`: Boolean flag to enable or disable debug mode for detailed logging.
+* `remote_version_file`: The file name of the version check file on the server.
+* `param_key`: (Optional) The key of the URL parameter to check for the file name.
+* `param_regex`: (Optional) The regex pattern to extract the file name from the URL parameter value.
+* `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for detailed logging. Defaults to `false`.
 
 #### Example Implementation:
 ```lua
@@ -32,12 +33,15 @@ In your package script, require the Mupdate module and instantiate it with the n
 function ThreshCopy:Loaded()
     -- If using muddler
     -- require("ThreshCopy\\Mupdate")
+    if not Mupdate then return end
 
+    -- GitHub example
     local updater = Mupdate:new({
         download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
         package_name = "ThreshCopy",
-        version_check_download = "version.txt",
-        version_check_save = "version.txt",
+        remote_version_file = "ThreshCopy_version.txt",
+        param_key = "response-content-disposition",
+        param_regex = "attachment; filename=(.*)",
         debug_mode = true
     })
     updater:Start()

@@ -27,8 +27,9 @@
     Variables:
     - download_path: The URL path where the package files are hosted.
     - package_name: The name of your package.
-    - version_check_download: The file name of the version check file on the server.
-    - version_check_save: The file name to save the downloaded version check file locally.
+    - remote_version_file: The file name of the version check file on the server.
+    - param_key: (Optional) The key of the URL parameter to check for the file name.
+    - param_regex: (Optional) The regex pattern to extract the file name from the URL parameter value.
     - debug_mode: Boolean flag to enable or disable debug mode for detailed logging.
 
        Example implementation:
@@ -36,14 +37,16 @@
        -- Auto Updater
        function ThreshCopy:Loaded()
            -- If using muddler
-           -- require("ThreshCopy\\Mupdate")
+           -- local Mupdate = require("ThreshCopy\\Mupdate")
            if not Mupdate then return end
 
+           -- GitHub example
            local updater = Mupdate:new({
                download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
                package_name = "ThreshCopy",
-               version_check_download = "version.txt",
-               version_check_save = "version.txt",
+               remote_version_file = "ThreshCopy_version.txt",
+               param_key = "response-content-disposition",
+               param_regex = "attachment; filename=(.*)",
                debug_mode = true
            })
            updater:Start()
@@ -54,9 +57,9 @@
 
     Version Comparison:
     - Mupdate calls `getPackageInfo(packageName)` to get your package's version number.
-      Which must be in the SemVar (above) format. So, this must be set on your package.
+      Which must be in the SemVer format. So, this must be set on your package.
     - Mupdate downloads the version file from the same location that hosts your `.mpackage`
-      file, and its contents must simply contain the updated version in the SemVar format.
+      file, and its contents must simply contain the updated version in the SemVer format.
 
     Semantic Versioning:
     The Mupdate system requires the use of semantic versioning (SemVer) for package version numbers.
@@ -173,7 +176,6 @@ function Mupdate:Start(cb)
     end
 
     self.callback = cb
-    self:Info("Checking url: " .. self.version_url)
     self:registerEventHandlers()
     self:update_scripts()
 end
@@ -221,7 +223,6 @@ local function parse_url(url)
     return parsed
 end
 
-
 function Mupdate:registerEventHandlers()
     local downloadHandlerLabel = generateEventName("DownloadDone", self.package_name)
     local downloadErrorHandlerLabel = generateEventName("DownloadError", self.package_name)
@@ -231,7 +232,8 @@ function Mupdate:registerEventHandlers()
     registerNamedEventHandler(self.package_name, downloadHandlerLabel, "sysDownloadDone", function(event, path , size, response)
         -- Compare the downloaded file path with the expected file path
         if path == self.temp_file_path .. self.package_name .. ".mpackage" then
-            self:finish_download(event, path)
+            self:Debug("Mupdate:sysDownloadDone() - Downloaded path = " .. path)
+            self:finish_download(path)
         else
             self:Debug("Mupdate:sysDownloadDone() - Downloaded file path does not match the expected path")
             self:Debug("Expected: " .. self.temp_file_path .. self.package_name .. ".mpackage" .. ", Got: " .. path)
@@ -242,7 +244,7 @@ function Mupdate:registerEventHandlers()
     registerNamedEventHandler(self.package_name, downloadErrorHandlerLabel, "sysDownloadError", function(event, err, localfile, actualurl)
         -- Compare the error file path with the expected file path
         if localfile == self.temp_file_path .. self.package_name .. ".mpackage" then
-            self:fail_download(event, err, localfile, actualurl)
+            self:fail_download(err, localfile, actualurl)
         else
             self:Debug("Mupdate:sysDownloadError() - Error file path does not match the expected path")
             self:Debug("Expected: " .. self.temp_file_path .. self.package_name .. ".mpackage" .. ", Got: " .. localfile)
@@ -357,51 +359,37 @@ function Mupdate:update_scripts()
     self:get_version_check()
 end
 
-function Mupdate:finish_download(event, path)
+function Mupdate:finish_download(path)
     self:Debug("Mupdate:finish_download() - Finished downloading: " .. path)
-    self:Debug("Mupdate:finish_download() - Checking if downloaded file is version info file")
 
-    local parsed_url = parse_url(path)
-
-    if not self.param_key then
-        -- No params, check if file name matches
-        if parsed_url.file == self.remote_version_file then
-            self:Debug("Mupdate:finish_download() - File name matches: " .. parsed_url.file)
-            self:load_package_mpackage(path)
-        else
-            self:Debug("Mupdate:finish_download() - File name does not match: " .. parsed_url.file)
-            self:Debug("Expected: " .. self.remote_version_file .. ", Got: " .. parsed_url.file)
-            self:Done()
-        end
+    -- Since sysDownloadDone provides a file path, we need to check against the expected file path directly
+    if path == self.temp_file_path .. self.package_name .. ".mpackage" then
+        self:Debug("Mupdate:finish_download() - Downloaded file path matches the expected path")
+        self:load_package_mpackage(path)
     else
-        -- Params exist, check according to param_key and param_regex
-        local param_value = parsed_url.params[self.param_key]
-        if self.param_regex then
-            -- Use regex to extract and match
-            local matched = param_value:match(self.param_regex)
-            if matched == self.remote_version_file then
-                self:Debug("Mupdate:finish_download() - Param regex matches: " .. param_value)
-                self:load_package_mpackage(path)
-            else
-                self:Debug("Mupdate:finish_download() - Param regex does not match: " .. param_value)
-                self:Debug("Expected: " .. self.remote_version_file .. ", Got: " .. matched)
-                self:Done()
-            end
-        else
-            -- Exact match
-            if param_value == self.remote_version_file then
-                self:Debug("Mupdate:finish_download() - Param matches: " .. param_value)
-                self:load_package_mpackage(path)
-            else
-                self:Debug("Mupdate:finish_download() - Param does not match: " .. param_value)
-                self:Debug("Expected: " .. self.remote_version_file .. ", Got: " .. param_value)
-                self:Done()
-            end
-        end
+        self:Debug("Mupdate:finish_download() - Downloaded file path does not match the expected path")
+        self:Debug("Expected: " .. self.temp_file_path .. self.package_name .. ".mpackage" .. ", Got: " .. path)
+        self:Done()
     end
 end
 
-function Mupdate:fail_download(event, err, localfile, actualurl)
+function Mupdate:load_package_mpackage(path)
+    self:Debug("Mupdate:load_package_mpackage() - Loading package mpackage from: " .. path)
+    self:uninstallAndInstall(path)
+end
+
+function Mupdate:uninstallAndInstall(path)
+    self:Debug("Mupdate:uninstallAndInstall() - Uninstalling and installing: " .. path)
+    self:UninstallPackage()
+    tempTimer(1, function()
+        installPackage(path)
+        os.remove(path)
+        lfs.rmdir(self.temp_file_path)
+        self:Done()
+    end)
+end
+
+function Mupdate:fail_download(err, localfile, actualurl)
     self:Error("Failed downloading " .. err)
     self:Debug("Mupdate:fail_download() - " .. err)
 
