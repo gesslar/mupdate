@@ -99,6 +99,14 @@ function Mupdate:Debug(text)
     end
 end
 
+function Mupdate:Error(text)
+    cecho("<b><ansiLightRed>ERROR</b><reset> [" .. (self.package_name or "Mupdate") .. "] - " .. text .. "\n")
+end
+
+function Mupdate:Info(text)
+    cecho("<b><ansiLightYellow>INFO</b><reset> [" .. (self.package_name or "Mupdate") .. "] - " .. text .. "\n")
+end
+
 function Mupdate:new(options)
     options = options or {}
 
@@ -250,7 +258,7 @@ function Mupdate:finish_download(_, path)
 end
 
 function Mupdate:fail_download(...)
-    cecho("\n<b><ansiLightRed>ERROR</b><reset> [" .. self.package_name .. "] - Failed downloading " .. tostring(arg[2]) .. "\n")
+    self:Error("Failed downloading " .. tostring(arg[2]))
     self:Debug("Mupdate:fail_download() [" .. self.package_name .. "] - Failed to download: " .. tostring(arg[2]))
 end
 
@@ -337,12 +345,14 @@ function Mupdate:get_version_check()
     registerNamedEventHandler(self.package_name, httpErrorHandlerLabel, "sysGetHttpError", function(event, response, url)
         deleteNamedEventHandler(self.package_name, httpHandlerLabel)
         deleteNamedEventHandler(self.package_name, httpErrorHandlerLabel)
-        print("ERROR: " .. response)
-        -- self:eventHandler(downloadErrorHandlerLabel, event, url, response)
+        self:Error("Failed to read version from " .. self.version_url)
+        self:Error(response)
+        self:Debug("Mupdate:get_version_check() - Failed to read version from " .. self.version_url)
+        self:Debug("Mupdate:get_version_check() - " .. response)
     end)
 
+    self:Info("Checking for updates for " .. self.package_name)
     getHTTP(self.version_url)
-    -- getHTTP("https://kakadoodoo.com/index.html")
 end
 
 function Mupdate:check_versions(version)
@@ -351,10 +361,11 @@ function Mupdate:check_versions(version)
     self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. version)
 
     if self:compare_versions(curr_version, version) then
-        cecho("<b><ansiLightYellow>INFO</b><reset> - Attempting to update " .. self.package_name .. " to v" .. version .. "\n")
+        self:Info("Attempting to update " .. self.package_name .. " to v" .. version)
         self:Debug("Mupdate:check_versions() - Remote version is newer, proceeding to update package")
         self:update_package()
     else
+        self:Info("No updates available for " .. self.package_name)
         self:Debug("Mupdate:check_versions() - Installed version is up-to-date")
     end
 end
