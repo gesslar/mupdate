@@ -87,16 +87,15 @@ Mupdate = Mupdate or {
     file_path = nil,
     version_check_save = nil,
     initialized = false,
-    downloading = false,
-    download_queue = {}, -- Ensure this is here in case the initialization function is missed
     debug_mode = false, -- Add a flag for debugging mode
 }
 
+local httpHandlerLabel, httpErrorHandlerLabel
 local downloadHandlerLabel, downloadErrorHandlerLabel
 
 function Mupdate:Debug(text)
     if self.debug_mode then
-        debugc(text)
+        debugc("[" .. (self.package_name or "Mupdate") .. "] " .. text)
     end
 end
 
@@ -106,10 +105,10 @@ function Mupdate:new(options)
     -- Test to see if any of the required fields are nil and error if so
     for k, v in pairs(MupdateRequired) do
         if not options[k] then
-            error("Mupdate:new() - Required field " .. k .. " is missing")
+            error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Required field " .. k .. " is missing")
         end
         if type(options[k]) ~= v then
-            error("Mupdate:new() - Required field " .. k .. " is not of type " .. v)
+            error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Required field " .. k .. " is not of type " .. v)
         end
     end
 
@@ -129,29 +128,16 @@ function Mupdate:new(options)
 
     local packageInfo = getPackageInfo(me.package_name)
     if not packageInfo then
-        error("Mupdate:new() - Package " .. me.package_name .. " not found")
+        error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " not found")
     end
     if not packageInfo.version then
-        error("Mupdate:new() - Package " .. me.package_name .. " does not have a version")
+        error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " does not have a version")
     end
 
     me.current_version = packageInfo.version
     me:Debug("Mupdate:new() - Current version: " .. me.current_version)
 
     me.initialized = true
-    me.downloading = false
-    me.download_queue = {} -- Ensure download_queue is initialized as an empty table
-    me:Debug("Mupdate:new() - Initialized download_queue")
-
-    downloadHandlerLabel = f"DownloadComplete{me.package_name}"
-    registerNamedEventHandler(me.package_name, "DownloadComplete", "sysDownloadDone", function(...)
-        me:eventHandler(downloadHandlerLabel, ...)
-    end)
-
-    downloadErrorHandlerLabel = f"DownloadError{me.package_name}"
-    registerNamedEventHandler(me.package_name, "DownloadError", "sysDownloadError", function(...)
-        me:eventHandler(downloadErrorHandlerLabel, ...)
-    end)
 
     return me
 end
@@ -160,7 +146,7 @@ function Mupdate:Start()
     self:Debug("Mupdate:Start() - Auto-updater started")
 
     if not self.initialized then
-        error("Mupdate:Start() - Mupdate object not initialized")
+        error("Mupdate:Start() [" .. self.package_name .. "] - Mupdate object not initialized")
     end
 
     self:update_scripts()
@@ -249,39 +235,8 @@ function Mupdate:load_package_mpackage(path)
     self:uninstallAndInstall(path)
 end
 
-function Mupdate:start_next_download()
-    self:Debug("Mupdate:start_next_download() - Checking download_queue")
-    local info = self.download_queue[1]
-    if not info then
-        self.downloading = false
-        self:Debug("Mupdate:start_next_download() - No more items in download_queue")
-        return
-    end
-
-    -- Remove the current item from the queue
-    table.remove(self.download_queue, 1)
-    self:Debug("Mupdate:start_next_download() - Removed item from download_queue, new size: " .. #self.download_queue)
-
-    -- Start the download
-    downloadFile(info[1], info[2])
-    self.downloading = true
-end
-
-function Mupdate:queue_download(path, address)
-    -- Add the download request to the queue
-    self:Debug("Mupdate:queue_download() - Adding to download_queue: " .. address .. " -> " .. path)
-    table.insert(self.download_queue, { path, address })
-    self:Debug("Mupdate:queue_download() - Current queue size: " .. #self.download_queue)
-
-    -- Start the download if not already in progress
-    if not self.downloading then
-        self:start_next_download()
-    end
-end
-
-function Mupdate:finish_download(path)
+function Mupdate:finish_download(_, path)
     self:Debug("Mupdate:finish_download() - Finished downloading: " .. path)
-    self:start_next_download()
     self:Debug("Mupdate:finish_download() - Checking if downloaded file is version info file")
     self:Debug("Mupdate:finish_download() - " .. path)
 
@@ -299,17 +254,30 @@ function Mupdate:finish_download(path)
 end
 
 function Mupdate:fail_download(...)
-    cecho(f"\n<b><ansiLightRed>ERROR</b><reset> [{self.package_name}] - Failed downloading {arg[2]}\n")
-    self:Debug(f"Mupdate:fail_download() {self.package_name} - Failed to download: {arg[2]}")
-    self:start_next_download()
+    cecho("\n<b><ansiLightRed>ERROR</b><reset> [" .. self.package_name .. "] - Failed downloading " .. tostring(arg[2]) .. "\n")
+    self:Debug("Mupdate:fail_download() [" .. self.package_name .. "] - Failed to download: " .. tostring(arg[2]))
 end
 
 function Mupdate:update_package()
     lfs.mkdir(self.temp_file_path)
-    self:Debug(f"Mupdate:update_package() - Queuing download for package update")
-    self:queue_download(
-        f"{self.temp_file_path}{self.package_name}.mpackage",
-        f"{self.download_path}{self.package_name}.mpackage"
+
+    downloadHandlerLabel = "DownloadDone" .. self.package_name
+    registerNamedEventHandler(self.package_name, downloadHandlerLabel, "sysDownloadDone", function(...)
+        deleteNamedEventHandler(self.package_name, downloadHandlerLabel)
+        deleteNamedEventHandler(self.package_name, downloadErrorHandlerLabel)
+        self:eventHandler(downloadHandlerLabel, ...)
+    end)
+
+    downloadErrorHandlerLabel = "DownloadError" .. self.package_name
+    registerNamedEventHandler(self.package_name, downloadErrorHandlerLabel, "sysDownloadError", function(...)
+        deleteNamedEventHandler(self.package_name, downloadHandlerLabel)
+        deleteNamedEventHandler(self.package_name, downloadErrorHandlerLabel)
+        self:eventHandler(downloadErrorHandlerLabel, ...)
+    end)
+
+    downloadFile(
+        self.temp_file_path .. self.package_name .. ".mpackage",
+        self.download_path .. self.package_name .. ".mpackage"
     )
 end
 
@@ -319,7 +287,7 @@ function Mupdate:update_scripts()
 end
 
 function Mupdate:eventHandler(handlerLabel, ...)
-    self:Debug(f"Mupdate:eventHandler() {self.package_name} - Event: {handlerLabel}")
+    self:Debug("Mupdate:eventHandler() [" .. self.package_name .. "] - Event: " .. handlerLabel)
     if handlerLabel == downloadHandlerLabel then
         self:finish_download(...)
     elseif handlerLabel == downloadErrorHandlerLabel then
@@ -360,38 +328,34 @@ function Mupdate:compare_versions(_installed, _remote)
 end
 
 function Mupdate:get_version_check()
-    lfs.mkdir(self.file_path)
-    self:Debug("Mupdate:get_version_check() - Getting version check file")
-    self:Debug("Mupdate:get_version_check() - " .. self.version_url)
-    self:Debug("Mupdate:get_version_check() - " .. self.file_path .. self.version_check_save)
+    httpHandlerLabel = "HTTPDone" .. self.package_name
+    httpErrorHandlerLabel = "HTTPError" .. self.package_name
 
-    -- Ensure the version file is saved in the correct directory
-    self:queue_download(
-        self.file_path .. self.version_check_save, -- Local path to save the file
-        self.version_url                           -- Remote URL to download from
-    )
+    registerNamedEventHandler(self.package_name, httpHandlerLabel, "sysGetHttpDone", function(event, url, response)
+        deleteNamedEventHandler(self.package_name, httpHandlerLabel)
+        deleteNamedEventHandler(self.package_name, httpErrorHandlerLabel)
+        self:check_versions(response)
+        -- self:eventHandler(downloadHandlerLabel, event, url, response)
+    end)
+
+    registerNamedEventHandler(self.package_name, httpErrorHandlerLabel, "sysGetHttpError", function(event, response, url)
+        deleteNamedEventHandler(self.package_name, httpHandlerLabel)
+        deleteNamedEventHandler(self.package_name, httpErrorHandlerLabel)
+        print("ERROR: " .. response)
+        -- self:eventHandler(downloadErrorHandlerLabel, event, url, response)
+    end)
+
+    getHTTP(self.version_url)
+    -- getHTTP("https://kakadoodoo.com/index.html")
 end
 
-function Mupdate:check_versions()
-    local dl_path = self.file_path .. self.version_check_save
-    self:Debug("Mupdate:check_versions() - Checking versions with file: " .. dl_path)
-    local dl_file, dl_errors = self:fileOpen(dl_path, "read")
-    if not dl_file then
-        cecho(f"<b><ansiLightRed>ERROR</b><reset> [{self.package_name}] - Could not read remote version info file, aborting auto-update routine. (" .. dl_errors .. ")\n")
-        self:Debug("Mupdate:check_versions() - Could not read remote version info file: " .. dl_errors)
-        return
-    end
-
+function Mupdate:check_versions(version)
     local curr_version = self.current_version
-    local dl_version = dl_file.contents[1]
 
-    self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. dl_version)
+    self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. version)
 
-    self:fileClose(dl_file)
-    os.remove(dl_path)
-
-    if self:compare_versions(curr_version, dl_version) then
-        cecho(f"<b><ansiLightYellow>INFO</b><reset> - Attempting to update {self.package_name} to v{dl_version}\n")
+    if self:compare_versions(curr_version, version) then
+        cecho("<b><ansiLightYellow>INFO</b><reset> - Attempting to update " .. self.package_name .. " to v" .. version .. "\n")
         self:Debug("Mupdate:check_versions() - Remote version is newer, proceeding to update package")
         self:update_package()
     else
