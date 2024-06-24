@@ -302,9 +302,7 @@ end
 function Mupdate:finish_httpget(event, url, response)
     local parsed_url = parse_url(url)
     local expected_file = self.package_name .. "_version.txt"
-debugc("Hi we got here")
-debugc("URL: " .. url)
-display(parsed_url)
+
     if self.param_key and parsed_url.params[self.param_key] then
         if self.param_regex then
             local matched = parsed_url.params[self.param_key]:match(self.param_regex)
