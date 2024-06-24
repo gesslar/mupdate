@@ -31,28 +31,8 @@ In your package script, require the Mupdate module and instantiate it with the n
 * `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for detailed logging. Defaults to `false`.
 
 #### Example Implementation:
-```lua
--- Auto Updater
-function ThreshCopy:Loaded()
-    -- If using muddler
-    -- local Mupdate = require("ThreshCopy\\Mupdate")
-    if not Mupdate then return end
 
-    -- GitHub example
-    local updater = Mupdate:new({
-        download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
-        package_name = "ThreshCopy",
-        remote_version_file = "ThreshCopy_version.txt",
-        param_key = "response-content-disposition",
-        param_regex = "attachment; filename=(.*)",
-        debug_mode = true
-    })
-    updater:Start()
-end
-
--- Start it up
-ThreshCopy.LoadHandler = ThreshCopy.LoadHandler or registerAnonymousEventHandler("sysLoadEvent", "ThreshCopy:Loaded")
-```
+An example implementation is provided in this repository called `Updater.lua`.
 
 ### Version Comparison
 * Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar format. So, this must be set on your package.
