@@ -1,0 +1,54 @@
+name: Update Submodules on Commit
+
+on:
+  push:
+    branches:
+      - main  # or specify the branch you want to trigger this workflow on
+
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+          sudo apt-add-repository https://cli.github.com/packages
+          sudo apt update
+          sudo apt install gh
+
+      - name: Get list of repositories with the topic 'mudlet-package'
+        id: get_repos
+        run: |
+          repos=$(gh api search/repositories -q 'topic:mudlet-package' --jq 'items.[].full_name')
+          echo "::set-output name=repos::${repos}"
+
+      - name: Update submodules in each repository
+        run: |
+          IFS=$'\n' read -r -d '' -a repo_array <<< "${{ steps.get_repos.outputs.repos }}"
+          for repo in "${repo_array[@]}"; do
+            owner=$(echo $repo | cut -d'/' -f1)
+            if [ "$owner" == "gesslar" ]; then
+              echo "Processing repository $repo"
+              git clone https://github.com/$repo temp_repo
+              cd temp_repo
+              git submodule update --remote --merge
+              if [ -n "$(git status --porcelain)" ]; then
+                echo "Changes detected in $repo, committing and pushing updates"
+                git add .
+                git commit -m "Update submodules"
+                git push
+              else
+                echo "No changes detected in $repo"
+              fi
+              cd ..
+              rm -rf temp_repo
+            else
+              echo "Skipping repository $repo as it is not owned by gesslar"
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
