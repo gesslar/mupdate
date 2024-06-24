@@ -384,7 +384,6 @@ function Mupdate:handleHttpError(event, response, url)
     self:fail_httpget(event, response, url)
 end
 
-
 function Mupdate:validate_event_url(url)
     local parsed_url = parse_url(url)
     if self.param_key and parsed_url.params[self.param_key] then
