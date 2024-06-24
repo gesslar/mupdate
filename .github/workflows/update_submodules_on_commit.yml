@@ -23,20 +23,11 @@ jobs:
       - name: Authenticate with GitHub CLI
         run: echo "${{ secrets.WORKFLOW_TOKEN }}" | gh auth login --with-token
 
-      - name: Read repository topic and owners
-        id: read_files
-        run: |
-          topic=$(cat repo_topic.txt)
-          echo "REPO_TOPIC=${topic}" >> $GITHUB_ENV
-
-          owners=$(cat repo_owner.txt | tr '\n' ' ')
-          echo "REPO_OWNERS=${owners}" >> $GITHUB_ENV
-
-      - name: Get list of repositories with the topic from repo_topic.txt
+      - name: Get list of repositories with the topic from REPO_TOPIC secret
         id: get_repos
         run: |
           repos=$(curl -H "Authorization: token ${{ secrets.WORKFLOW_TOKEN }}" \
-                    "https://api.github.com/search/repositories?q=topic:${{ env.REPO_TOPIC }}" \
+                    "https://api.github.com/search/repositories?q=topic:${{ secrets.REPO_TOPIC }}" \
                     | jq -r '.items[].full_name')
           echo "Found repositories: $repos"
           echo "$repos" > repos.txt
@@ -54,7 +45,7 @@ jobs:
           git config --global user.name "${{ secrets.G_NAME }}"
 
           IFS=' ' read -r -a repo_array <<< "${{ env.REPOS }}"
-          IFS=' ' read -r -a owner_array <<< "${{ env.REPO_OWNERS }}"
+          IFS=' ' read -r -a owner_array <<< "${{ secrets.REPO_OWNER }}"
           echo "Repositories to process: ${#repo_array[@]}"
           for repo in "${repo_array[@]}"; do
             echo "Processing repository $repo"
