@@ -4,6 +4,7 @@ on:
   release:
     types:
       - published  # Trigger the workflow only when a new release is published
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
   update-submodules:
