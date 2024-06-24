@@ -50,6 +50,9 @@ jobs:
 
       - name: Update submodules in each repository
         run: |
+          git config --global user.email "${{ secrets.G_EMAIL }}"
+          git config --global user.name "${{ secrets.G_NAME }}"
+
           IFS=' ' read -r -a repo_array <<< "${{ env.REPOS }}"
           IFS=' ' read -r -a owner_array <<< "${{ env.REPO_OWNERS }}"
           echo "Repositories to process: ${#repo_array[@]}"
