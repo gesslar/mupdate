@@ -11,6 +11,8 @@ The core functionality of this auto-updater was adapted from the DSL PNP 4.0 Mai
 
 Special thanks to [@demonnic](https://github.com/demonnic/) for providing additional Lua code and guidance on package installation.
 
+![Demo GIF](resources/demo.gif)
+
 ## Instructions for Use
 
 ### 1. Placement
