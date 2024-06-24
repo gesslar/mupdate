@@ -26,11 +26,20 @@ jobs:
       - name: Test GitHub CLI authentication
         run: gh auth status
 
-      - name: Get list of repositories with the topic 'mudlet-package'
+      - name: Read repository topic and owners
+        id: read_files
+        run: |
+          topic=$(cat repo_topic.txt)
+          echo "REPO_TOPIC=${topic}" >> $GITHUB_ENV
+
+          owners=$(cat repo_owner.txt | tr '\n' ' ')
+          echo "REPO_OWNERS=${owners}" >> $GITHUB_ENV
+
+      - name: Get list of repositories with the topic from repo_topic.txt
         id: get_repos
         run: |
           repos=$(curl -H "Authorization: token ${{ secrets.WORKFLOW_TOKEN }}" \
-                    "https://api.github.com/search/repositories?q=topic:mudlet-package" \
+                    "https://api.github.com/search/repositories?q=topic:${{ env.REPO_TOPIC }}" \
                     | jq -r '.items[].full_name')
           echo "Found repositories: $repos"
           echo "$repos" > repos.txt
@@ -45,11 +54,12 @@ jobs:
       - name: Update submodules in each repository
         run: |
           IFS=' ' read -r -a repo_array <<< "${{ env.REPOS }}"
+          IFS=' ' read -r -a owner_array <<< "${{ env.REPO_OWNERS }}"
           echo "Repositories to process: ${#repo_array[@]}"
           for repo in "${repo_array[@]}"; do
             echo "Processing repository $repo"
             owner=$(echo $repo | cut -d'/' -f1)
-            if [ "$owner" == "gesslar" ]; then
+            if [[ " ${owner_array[@]} " =~ " ${owner} " ]]; then
               echo "Processing repository $repo"
               git clone https://github.com/$repo temp_repo
               cd temp_repo
@@ -65,7 +75,7 @@ jobs:
               cd ..
               rm -rf temp_repo
             else
-              echo "Skipping repository $repo as it is not owned by gesslar"
+              echo "Skipping repository $repo as it is not owned by a valid owner"
             fi
           done
         env:
