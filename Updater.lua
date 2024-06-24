@@ -1,5 +1,4 @@
 --[[
-
 This is the auto-updater for for this package. It uses downloads the latest
 version of Mupdate and then uses it to download the latest version of the
 package, uninstalls the old version, and installs the new version.
@@ -22,7 +21,6 @@ The Customizable settings are:
         debug_mode: (optional) Whether to print debug messages
 
 Written by Gesslar@ThresholdRPG 2024-06-24
-
 ]]--
 
 __PKGNAME__ = __PKGNAME__ or {}
