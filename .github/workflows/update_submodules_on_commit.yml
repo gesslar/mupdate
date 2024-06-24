@@ -60,7 +60,9 @@ jobs:
               echo "Processing repository $repo"
               git clone https://github.com/$repo temp_repo
               cd temp_repo
-              git submodule update --remote --merge
+              git submodule update --remote
+              mkdir -p src/resources
+              cp submodule/Mupdate/Mupdate.lua src/resources/Mupdate.lua
               if [ -n "$(git status --porcelain)" ]; then
                 echo "Changes detected in $repo, committing and pushing updates"
                 git add .
