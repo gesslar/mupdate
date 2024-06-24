@@ -354,7 +354,6 @@ function Mupdate:fail_httpget(event, response, url)
             self:Debug("Parsed param: " .. (parsed_url.params[self.param_key] or "nil"))
         end
     end
-    self:Done()
 end
 
 function Mupdate:handleDownloadDone(event, path, size, response)
