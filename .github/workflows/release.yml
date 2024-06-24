@@ -18,6 +18,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 2  # Fetch at least the last 2 commits
 
     - name: Set up date and time
       id: date
@@ -27,7 +29,6 @@ jobs:
     - name: Check for changes in Mupdate.lua
       id: check_changes
       run: |
-        git fetch origin main
         if git diff --name-only HEAD^ HEAD | grep -q 'Mupdate.lua'; then
           echo "CHANGED=true" >> $GITHUB_ENV
         else
