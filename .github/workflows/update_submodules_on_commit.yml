@@ -23,10 +23,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install gh -y
 
+      - name: Authenticate with GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Test GitHub CLI authentication
+        run: gh auth status
+
       - name: Get list of repositories with the topic 'mudlet-package'
         id: get_repos
         run: |
           repos=$(gh api search/repositories -q 'topic:mudlet-package' --jq 'items.[].full_name')
+          echo "Found repositories: $repos"
           echo "::set-output name=repos::${repos}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
