@@ -1,7 +1,11 @@
 name: Update Submodules
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *' # every day at midnight
 
 jobs:
   update-submodules:
