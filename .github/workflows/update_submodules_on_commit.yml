@@ -24,8 +24,7 @@ jobs:
           sudo apt-get install gh -y
 
       - name: Authenticate with GitHub CLI
-        run: |
-          echo "${{ secrets.WORKFLOW_TOKEN }}" | gh auth login --with-token
+        run: echo "${{ secrets.WORKFLOW_TOKEN }}" | gh auth login --with-token
 
       - name: Test GitHub CLI authentication
         run: gh auth status
