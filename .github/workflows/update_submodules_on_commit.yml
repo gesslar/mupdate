@@ -33,12 +33,8 @@ jobs:
                     "https://api.github.com/search/repositories?q=topic:mudlet-package" \
                     | jq -r '.items[].full_name')
           echo "Found repositories: $repos"
-          echo "::set-output name=repos::${repos}"
-
-      - name: Save list of repositories to artifact
-        run: |
-          echo "${{ steps.get_repos.outputs.repos }}" > repos.txt
-        continue-on-error: true
+          echo "$repos" > repos.txt
+          echo "REPOS=$repos" >> $GITHUB_ENV
 
       - name: Upload list of repositories
         uses: actions/upload-artifact@v3
@@ -48,7 +44,7 @@ jobs:
 
       - name: Update submodules in each repository
         run: |
-          IFS=$'\n' read -r -d '' -a repo_array <<< "${{ steps.get_repos.outputs.repos }}"
+          IFS=$'\n' read -r -d '' -a repo_array <<< "${{ env.REPOS }}"
           echo "Repositories to process: ${#repo_array[@]}"
           for repo in "${repo_array[@]}"; do
             echo "Processing repository $repo"
