@@ -1,9 +1,7 @@
-name: Update Submodules on Commit
+name: Update Submodules
 
 on:
-  push:
-    branches:
-      - main  # or specify the branch you want to trigger this workflow on
+  workflow_dispatch:
 
 jobs:
   update-submodules:
@@ -60,3 +58,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+        shell: bash -l {0}
+        continue-on-error: true
+
+      - name: Capture error log
+        if: failure()
+        run: dmesg | tail -20
