@@ -74,8 +74,15 @@ jobs:
               cp submodule/Mupdate/Mupdate.lua src/resources/Mupdate.lua
               if [ -n "$(git status --porcelain)" ]; then
                 echo "Changes detected in $repo, committing and pushing updates"
-                git add .
-                git commit -m "Update submodules"
+                # Update mfile version
+                version=$(jq -r '.version' mfile)
+                IFS='.' read -r -a semver <<< "$version"
+                semver[2]=$((semver[2] + 1))
+                new_version="${semver[0]}.${semver[1]}.${semver[2]}"
+                jq --arg new_version "$new_version" '.version = $new_version' mfile > mfile.tmp && mv mfile.tmp mfile
+                echo "Updated version to $new_version"
+                git add mfile src/resources/Mupdate.lua
+                git commit -m "Update submodules and increment version to $new_version"
                 # Use the GitHub token for authentication
                 git remote set-url origin https://x-access-token:${{ secrets.WORKFLOW_TOKEN }}@github.com/$repo.git
                 git push
