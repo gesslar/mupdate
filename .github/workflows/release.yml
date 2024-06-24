@@ -39,7 +39,7 @@ jobs:
       if: github.repository_owner == 'gesslar' && env.CHANGED == 'true'
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "LICENSE,Mupdate.lua,README.md"
+        artifacts: "LICENSE,Mupdate.lua,Updater.lua,README.md"
         allowUpdates: true
         bodyFile: "./README.md"
         tag: ${{ env.DATE_TAG }}
