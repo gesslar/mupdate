@@ -28,6 +28,8 @@ jobs:
         run: |
           repos=$(gh api search/repositories -q 'topic:mudlet-package' --jq 'items.[].full_name')
           echo "::set-output name=repos::${repos}"
+        env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
       - name: Update submodules in each repository
         run: |
@@ -54,4 +56,5 @@ jobs:
             fi
           done
         env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
