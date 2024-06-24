@@ -1,11 +1,9 @@
-name: Update Submodules and Increment Version
+name: Update Submodules and Increment Version on new Release
 
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * *' # every day at midnight
+  release:
+    types:
+      - published  # Trigger the workflow only when a new release is published
 
 jobs:
   update-submodules:

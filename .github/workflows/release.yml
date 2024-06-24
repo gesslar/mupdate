@@ -24,8 +24,18 @@ jobs:
       run: |
         echo "DATE_TAG=$(date -u +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
+    - name: Check for changes in Mupdate.lua
+      id: check_changes
+      run: |
+        git fetch origin main
+        if git diff --name-only HEAD^ HEAD | grep -q 'Mupdate.lua'; then
+          echo "CHANGED=true" >> $GITHUB_ENV
+        else
+          echo "CHANGED=false" >> $GITHUB_ENV
+        fi
+
     - name: Create Release
-      if: github.repository_owner == 'gesslar'
+      if: github.repository_owner == 'gesslar' && env.CHANGED == 'true'
       uses: ncipollo/release-action@v1
       with:
         artifacts: "LICENSE,Mupdate.lua,README.md"
