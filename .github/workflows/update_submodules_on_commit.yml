@@ -1,4 +1,4 @@
-name: Update Submodules
+name: Update Submodules and Increment Version
 
 on:
   push:
