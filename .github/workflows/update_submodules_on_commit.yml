@@ -35,10 +35,23 @@ jobs:
           echo "Found repositories: $repos"
           echo "::set-output name=repos::${repos}"
 
+      - name: Save list of repositories to artifact
+        run: |
+          echo "${{ steps.get_repos.outputs.repos }}" > repos.txt
+        continue-on-error: true
+
+      - name: Upload list of repositories
+        uses: actions/upload-artifact@v3
+        with:
+          name: repositories
+          path: repos.txt
+
       - name: Update submodules in each repository
         run: |
           IFS=$'\n' read -r -d '' -a repo_array <<< "${{ steps.get_repos.outputs.repos }}"
+          echo "Repositories to process: ${#repo_array[@]}"
           for repo in "${repo_array[@]}"; do
+            echo "Processing repository $repo"
             owner=$(echo $repo | cut -d'/' -f1)
             if [ "$owner" == "gesslar" ]; then
               echo "Processing repository $repo"
