@@ -235,6 +235,7 @@ local function parse_url(url)
         file = file,
         params = params
     }
+
 -- Uncomment the below if you also want to see the debugging output
 -- for the parsed URL
 --[[
@@ -247,6 +248,7 @@ local function parse_url(url)
         debugc("  Param: " .. key .. " = " .. value)
     end
 ]] --
+
     return parsed
 end
 
