@@ -174,7 +174,7 @@ function Mupdate:new(options)
 end
 
 function Mupdate:running()
-    local timers = getNamedTimers("Mupdate")
+    local timers = getNamedTimers("Mupdate") or {}
     for _, timer in ipairs(timers) do
         if timer == "MupdateRunning" then
             return true
@@ -261,7 +261,7 @@ function Mupdate:registerEventHandlers()
         sysGetHttpError = generateEventName("HTTPError", self.package_name, self.profile),
     }
 
-    local existingHandlers = getNamedEventHandlers(self.package_name)
+    local existingHandlers = getNamedEventHandlers(self.package_name) or {}
     local newEvents = {}
     for event, label in pairs(handlerEvents) do
         if not existingHandlers[label] then
