@@ -1,3 +1,10 @@
+name: Update Submodules on Commit
+
+on:
+  push:
+    branches:
+      - main  # or specify the branch you want to trigger this workflow on
+
 jobs:
   update-submodules:
     runs-on: ubuntu-latest
