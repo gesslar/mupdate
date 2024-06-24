@@ -206,7 +206,6 @@ function Mupdate:Start()
     self:update_scripts()
 end
 
--- Local function to decode URL entities
 local function url_decode(str)
     str = string.gsub(str, '+', ' ')
     str = string.gsub(str, '%%(%x%x)', function(h)
@@ -215,7 +214,6 @@ local function url_decode(str)
     return str
 end
 
--- Local function to parse URL parameters
 local function parse_url_params(query_string)
     local params = {}
     for key_value in string.gmatch(query_string, "([^&]+)") do
@@ -228,27 +226,30 @@ local function parse_url_params(query_string)
 end
 
 local function parse_url(url)
-    local protocol, host, file, query_string = string.match(url, "^(https?)://([^/]+)/(.-)%??(.*)")
+    local protocol, host, path, query_string = string.match(url, "^(https?)://([^/]+)/([^?]*)%??(.*)")
+    local file = string.match(path, "([^/]+)$")
     local params = parse_url_params(query_string)
     local parsed = {
         protocol = protocol,
         host = host,
+        path = path,
         file = file,
         params = params
     }
 
--- Uncomment the below if you also want to see the debugging output
--- for the parsed URL
---[[
+    -- Uncomment the below if you also want to see the debugging output
+    -- for the parsed URL
+    --[[
     -- Debugging output
     debugc("Parsed URL:")
     debugc("  Protocol: " .. (parsed.protocol or "nil"))
     debugc("  Host: " .. (parsed.host or "nil"))
+    debugc("  Path: " .. (parsed.path or "nil"))
     debugc("  File: " .. (parsed.file or "nil"))
     for key, value in pairs(parsed.params) do
         debugc("  Param: " .. key .. " = " .. value)
     end
-]] --
+    ]]--
 
     return parsed
 end
@@ -301,7 +302,9 @@ end
 function Mupdate:finish_httpget(event, url, response)
     local parsed_url = parse_url(url)
     local expected_file = self.package_name .. "_version.txt"
-
+debugc("Hi we got here")
+debugc("URL: " .. url)
+display(parsed_url)
     if self.param_key and parsed_url.params[self.param_key] then
         if self.param_regex then
             local matched = parsed_url.params[self.param_key]:match(self.param_regex)
@@ -502,12 +505,18 @@ function Mupdate:get_version_check()
 end
 
 function Mupdate:check_versions(version)
+    -- Extract the first line and remove any trailing newline characters
+    local first_line_version = version:match("([^\n]*)")
+    if first_line_version then
+        first_line_version = first_line_version:gsub("%s+$", "")
+    end
+
     local curr_version = self.current_version
 
-    self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. version)
+    self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. first_line_version)
 
-    if self:compare_versions(curr_version, version) then
-        self:Info("Attempting to update " .. self.package_name .. " to v" .. version)
+    if self:compare_versions(curr_version, first_line_version) then
+        self:Info("Attempting to update " .. self.package_name .. " to v" .. first_line_version)
         self:Debug("Mupdate:check_versions() - Remote version is newer, proceeding to update package")
         self:update_package()
     else
