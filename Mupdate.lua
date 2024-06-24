@@ -172,7 +172,26 @@ function Mupdate:new(options)
     return me
 end
 
+function Mupdate:running()
+    local timers = getNamedTimers("Mupdate")
+    for _, timer in ipairs(timers) do
+        if timer == "MupdateRunning" then
+            return true
+        end
+    end
+    return false
+end
+
 function Mupdate:Start()
+    if(self:running()) then
+        tempTimer(2, function() self:Start() end)
+        return
+    end
+
+    registerNamedTimer("Mupdate", "MupdateRunning", 10, function()
+        deleteNamedTimer("Mupdate", "MupdateRunning")
+    end)
+
     self:Debug("Mupdate:Start() - Auto-updater started")
 
     if not self.initialized then
