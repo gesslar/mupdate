@@ -235,6 +235,8 @@ local function parse_url(url)
         file = file,
         params = params
     }
+-- Uncomment the below if you also want to see the debugging output
+-- for the parsed URL
 --[[
     -- Debugging output
     debugc("Parsed URL:")
