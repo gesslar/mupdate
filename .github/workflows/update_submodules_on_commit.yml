@@ -23,9 +23,6 @@ jobs:
       - name: Authenticate with GitHub CLI
         run: echo "${{ secrets.WORKFLOW_TOKEN }}" | gh auth login --with-token
 
-      - name: Test GitHub CLI authentication
-        run: gh auth status
-
       - name: Read repository topic and owners
         id: read_files
         run: |
