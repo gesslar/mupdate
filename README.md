@@ -35,7 +35,7 @@ In your package script, require the Mupdate module and instantiate it with the n
 -- Auto Updater
 function ThreshCopy:Loaded()
     -- If using muddler
-    -- Mupdate = require("ThreshCopy\\Mupdate")
+    -- local Mupdate = require("ThreshCopy\\Mupdate")
     if not Mupdate then return end
 
     -- GitHub example
