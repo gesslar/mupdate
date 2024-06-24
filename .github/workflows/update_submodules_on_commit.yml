@@ -79,6 +79,7 @@ jobs:
                 jq --arg new_version "$new_version" '.version = $new_version' mfile > mfile.tmp && mv mfile.tmp mfile
                 echo "Updated version to $new_version"
                 git add .
+                git add submodule/Mupdate
                 git commit -m "Update submodules and increment version to $new_version"
                 # Use the GitHub token for authentication
                 git remote set-url origin https://x-access-token:${{ secrets.WORKFLOW_TOKEN }}@github.com/$repo.git
