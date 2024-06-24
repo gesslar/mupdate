@@ -487,7 +487,7 @@ function Mupdate:UninstallPackage()
 end
 
 function Mupdate:get_version_check()
-    self:Info("Checking for updates for " .. self.package_name .. " on " .. self.profile)
+    -- self:Info("Checking for updates for " .. self.package_name .. " on " .. self.profile)
     getHTTP(self.version_url)
 end
 
@@ -501,7 +501,7 @@ function Mupdate:check_versions(version)
         self:Debug("Mupdate:check_versions() - Remote version is newer, proceeding to update package")
         self:update_package()
     else
-        self:Info("No updates available for " .. self.package_name)
+        -- self:Info("No updates available for " .. self.package_name)
         self:Debug("Mupdate:check_versions() - Installed version is up-to-date")
     end
 end
