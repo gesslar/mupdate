@@ -11,6 +11,7 @@
     is available at:
     https://github.com/11BelowStudio/MUDKIP_Mud2
 
+    Original acknowledgements from the MUDKIP_Mud2 package:
     The core functionality of this auto-updater was adapted from the DSL PNP 4.0 Main Script by Zachary Hiland,
     originally shared on the Mudlet forums:
     https://forums.mudlet.org/viewtopic.php?p=20504
