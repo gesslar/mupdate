@@ -1,1 +1,1 @@
-mudlet-gesslar
+mudlet-package

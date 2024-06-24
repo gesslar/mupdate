@@ -65,11 +65,6 @@ jobs:
               cd temp_repo
               git submodule update --init --recursive
               git submodule update --remote
-              # Add debugging steps
-              echo "Listing submodules:"
-              git submodule
-              echo "Listing contents of submodule/Mupdate:"
-              ls submodule/Mupdate
               mkdir -p src/resources
               cp submodule/Mupdate/Mupdate.lua src/resources/Mupdate.lua
               if [ -n "$(git status --porcelain)" ]; then
