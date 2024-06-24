@@ -76,6 +76,8 @@ jobs:
                 echo "Changes detected in $repo, committing and pushing updates"
                 git add .
                 git commit -m "Update submodules"
+                # Use the GitHub token for authentication
+                git remote set-url origin https://x-access-token:${{ secrets.WORKFLOW_TOKEN }}@github.com/$repo.git
                 git push
               else
                 echo "No changes detected in $repo"
