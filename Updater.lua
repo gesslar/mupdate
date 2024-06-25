@@ -104,6 +104,15 @@ function __PKGNAME__.Mupdate:UnregisterMupdateEventHandlers()
     end
 end
 
+function __PKGNAME__.update()
+    local mupdate = require("__PKGNAME__.Mupdate")
+
+    cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> Initiating manual update.\n")
+    cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> Full logging of update activity may be found in <u>Scripts</u> > <u>Errors</u>\n")
+
+    __PKGNAME__.Mupdate:downloadLatestMupdate()
+end
+
 function __PKGNAME__.Mupdate:downloadLatestMupdate()
     local success, err = pcall(os.remove, self.local_path)
 
