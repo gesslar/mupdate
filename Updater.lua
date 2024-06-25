@@ -98,9 +98,6 @@ function __PKGNAME__.Mupdate:UnregisterMupdateEventHandlers()
     local existingHandlers = getNamedEventHandlers(self.tag) or {}
     for _, label in pairs(self.handler_events) do
         local result = deleteNamedEventHandler(self.tag, label)
-        if not result then
-            display("Failed to unregister: " .. label)
-        end
     end
 end
 
@@ -130,4 +127,17 @@ __PKGNAME__.Mupdate.MupdateLoadHandler = __PKGNAME__.MupdateLoadHandler or
         __PKGNAME__.Mupdate.tag..".Load", -- handler name
         "sysLoadEvent", -- event name
         function(event) __PKGNAME__.Mupdate:downloadLatestMupdate() end
+    )
+
+-- End it all
+__PKGNAME__.Mupdate.MudpateUninstallHandler = __PKGNAME__.MudpateUninstallHandler or
+    registerNamedEventHandler(
+        __PKGNAME__.Mupdate.tag, -- username
+        __PKGNAME__.Mupdate.tag..".Uninstall", -- handler name
+        "sysUninstall", -- event name
+        function(event, package)
+            if package ~= "__PKGNAME__" then return end
+            deleteAllNamedEventHandlers(__PKGNAME__.Mupdate.tag)
+            deleteAllNamedTimers(__PKGNAME__.Mupdate.tag)
+        end
     )
