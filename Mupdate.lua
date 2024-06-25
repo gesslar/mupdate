@@ -239,7 +239,7 @@ local function parse_url(url)
 
     -- Uncomment the below if you also want to see the debugging output
     -- for the parsed URL
-    --[[
+
     -- Debugging output
     debugc("Parsed URL:")
     debugc("  Protocol: " .. (parsed.protocol or "nil"))
@@ -249,7 +249,6 @@ local function parse_url(url)
     for key, value in pairs(parsed.params) do
         debugc("  Param: " .. key .. " = " .. value)
     end
-    ]]--
 
     return parsed
 end
