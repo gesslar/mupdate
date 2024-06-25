@@ -121,7 +121,6 @@ function __PKGNAME__.Mupdate:downloadLatestMupdate()
 end
 
 -- Start it up
--- Start it up
 registerNamedEventHandler(
     __PKGNAME__.Mupdate.tag, -- username
     __PKGNAME__.Mupdate.tag..".Load", -- handler name
