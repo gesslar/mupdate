@@ -1,6 +1,6 @@
 --[[
 
-This is the auto-updater for for this package. It uses downloads the latest
+This is the auto-updater for this package. It uses downloads the latest
 version of Mupdate and then uses it to download the latest version of the
 package, uninstalls the old version, and installs the new version.
 
