@@ -122,14 +122,3 @@ __PKGNAME__.Mupdate.MupdateLoadHandler = __PKGNAME__.MupdateLoadHandler or
         "sysLoadEvent", -- event name
         function(event) __PKGNAME__.Mupdate:downloadLatestMupdate() end
     )
-
-__PKGNAME__.Mupdate.MupdateInstallHandler = __PKGNAME__.Mupdate.MupdateInstallHandler or
-    registerNamedEventHandler(
-        __PKGNAME__.Mupdate.tag, -- username
-        __PKGNAME__.Mupdate.tag..".Install", -- handler name
-        "sysInstallPackage", -- event name
-        function(event, package, path)
-            if package ~= "__PKGNAME__" then return end
-            __PKGNAME__.Mupdate:downloadLatestMupdate()
-        end
-    )
