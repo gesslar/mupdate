@@ -25,7 +25,7 @@ In your package script, require the Mupdate module and instantiate it with the n
 ### Variables:
 * `download_path`: The URL path where the package files are hosted.
 * `package_name`: The name of your package.
-* `remote_version_file`: The file name of the version check file on the server.
+* `remote_version_file`: The file name of the version check file on the server. File should be named `PACKAGE_NAME_version.txt`
 * `param_key`: (Optional) The key of the URL parameter to check for the file name.
 * `param_regex`: (Optional) The regex pattern to extract the file name from the URL parameter value.
 * `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for detailed logging. Defaults to `false`.
