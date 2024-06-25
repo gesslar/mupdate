@@ -1,4 +1,5 @@
 --[[
+
 This is the auto-updater for for this package. It uses downloads the latest
 version of Mupdate and then uses it to download the latest version of the
 package, uninstalls the old version, and installs the new version.
@@ -21,6 +22,7 @@ The Customizable settings are:
         debug_mode: (optional) Whether to print debug messages
 
 Written by Gesslar@ThresholdRPG 2024-06-24
+
 ]]--
 
 __PKGNAME__ = __PKGNAME__ or {}
@@ -49,24 +51,11 @@ function __PKGNAME__.Mupdate:AutoMupdate(handle, path)
     debugc("AutoMupdate - Package Name: __PKGNAME__, Handle: " .. handle)
     if handle ~= self.tag then return end
 
-    local timerName = self.tag
-    local timers = getNamedTimers(self.tag) or {}
-
-    for _, timer in ipairs(timers) do
-        if timer == timerName then return end
-    end
-
     registerNamedTimer(self.tag, self.tag, 2, function()
         deleteAllNamedTimers(self.tag)
-
-        self.Mupdate = require("__PKGNAME__\\Mupdate")
-        self.Mupdater = self.Mupdate:new(self.payload)
+        self.MupdateScript = require("__PKGNAME__\\Mupdate")
+        self.Mupdater = self.MupdateScript:new(self.payload)
         self.Mupdater:Start()
-
-        -- Now let's clean up after 5 minutes of waiting
-        registerNamedTimer(self.tag, self.tag, 300, function()
-            self:UnregisterMupdateEventHandlers()
-        end)
     end)
 end
 
@@ -86,8 +75,8 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
             "sysDownloadDone",
             function(event, path, size, response)
                 if path ~= self.local_path then return end
-                self:AutoMupdate(self.tag, path)
                 self:UnregisterMupdateEventHandlers()
+                self:AutoMupdate(self.tag, path)
             end
         )
     end
@@ -99,7 +88,6 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
             "sysDownloadError",
             function(event, err, path, actualurl)
                 if path ~= self.local_path then return end
-                self:AutoMupdate(self.tag, path)
                 self:UnregisterMupdateEventHandlers()
             end
         )
@@ -109,8 +97,9 @@ end
 function __PKGNAME__.Mupdate:UnregisterMupdateEventHandlers()
     local existingHandlers = getNamedEventHandlers(self.tag) or {}
     for _, label in pairs(self.handler_events) do
-        if existingHandlers[label] then
-            deleteNamedEventHandler(self.tag, label)
+        local result = deleteNamedEventHandler(self.tag, label)
+        if not result then
+            display("Failed to unregister: " .. label)
         end
     end
 end
@@ -126,11 +115,10 @@ function __PKGNAME__.Mupdate:downloadLatestMupdate()
 end
 
 -- Start it up
-
 __PKGNAME__.Mupdate.MupdateLoadHandler = __PKGNAME__.MupdateLoadHandler or
     registerNamedEventHandler(
         __PKGNAME__.Mupdate.tag, -- username
-        "__PKGNAME__."..__PKGNAME__.Mupdate.tag..".Load", -- handler name
+        __PKGNAME__.Mupdate.tag..".Load", -- handler name
         "sysLoadEvent", -- event name
         function(event) __PKGNAME__.Mupdate:downloadLatestMupdate() end
     )
@@ -138,11 +126,10 @@ __PKGNAME__.Mupdate.MupdateLoadHandler = __PKGNAME__.MupdateLoadHandler or
 __PKGNAME__.Mupdate.MupdateInstallHandler = __PKGNAME__.Mupdate.MupdateInstallHandler or
     registerNamedEventHandler(
         __PKGNAME__.Mupdate.tag, -- username
-        "__PKGNAME__."..__PKGNAME__.Mupdate.tag..".Install", -- handler name
+        __PKGNAME__.Mupdate.tag..".Install", -- handler name
         "sysInstallPackage", -- event name
         function(event, package, path)
             if package ~= "__PKGNAME__" then return end
-
             __PKGNAME__.Mupdate:downloadLatestMupdate()
         end
     )
