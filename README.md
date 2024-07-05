@@ -1,5 +1,7 @@
 # Mupdate Auto-Updater Module
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/85f9368162d94f99a5b4a16fc78a441a)](https://app.codacy.com/gh/gesslar/mupdate?utm_source=github.com&utm_medium=referral&utm_content=gesslar/mupdate&utm_campaign=Badge_Grade)
+
 ## Description
 
 This module provides an auto-updater for packages within the MUD client, [Mudlet](https://github.com/Mudlet/Mudlet/). It automates the process of checking for new versions of a package, downloading updates, and installing them.
