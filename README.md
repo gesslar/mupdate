@@ -8,7 +8,7 @@ This module provides an auto-updater for packages within the MUD client, [Mudlet
 
 This module was essentially ripped off from the [MUDKIP_Mud2](https://github.com/11BelowStudio/MUDKIP_Mud2) package from [@11BelowStudio](https://github.com/11BelowStudio/), and refactored.
 
-### Original acknowledgements on the MUDKIP_Mud2 package:
+### Original acknowledgements on the MUDKIP_Mud2 package
 
 The core functionality of this auto-updater was adapted from the DSL PNP 4.0 Main Script by Zachary Hiland, originally shared on the [Mudlet forums](https://forums.mudlet.org/viewtopic.php?p=20504).
 
@@ -27,7 +27,7 @@ Special thanks to [@demonnic](https://github.com/demonnic/) for providing additi
 
 In your package script, require the Mupdate module and instantiate it with the necessary options.
 
-### Variables:
+### Variables
 
 - `download_path`: The URL path where the package files are hosted.
 - `package_name`: The name of your package.
@@ -36,14 +36,14 @@ In your package script, require the Mupdate module and instantiate it with the n
 - `param_regex`: (Optional) The regex pattern to extract the file name from the URL parameter value.
 - `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for detailed logging. Defaults to `false`.
 
-#### Example Implementation:
+#### Example Implementation
 
 An example implementation is provided in this repository called `Updater.lua`.
 
 ### Version Comparison
 
-* Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar format. So, this must be set on your package.
-* Mupdate downloads the version file from the same location that hosts your `.mpackage` file, and its contents must simply contain the updated version in the SemVar format.
+- Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar format. So, this must be set on your package.
+- Mupdate downloads the version file from the same location that hosts your `.mpackage` file, and its contents must simply contain the updated version in the SemVar format.
 
 ### Semantic Versioning
 
