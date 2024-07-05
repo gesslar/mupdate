@@ -11,6 +11,18 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
+  codacy-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run Codacy Analysis
+        uses: codacy/codacy-analysis-cli-action@v2
+        with:
+          api-token: ${{ secrets.CODACY }}
+
   create_release:
     runs-on: ubuntu-latest
     permissions:
@@ -38,7 +50,7 @@ jobs:
 
     - name: Create Release
       if: github.repository_owner == 'gesslar' && env.CHANGED == 'true'
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
       with:
         artifacts: "LICENSE,Mupdate.lua,Updater.lua,README.md"
         allowUpdates: true
