@@ -50,7 +50,7 @@ jobs:
 
     - name: Create Release
       if: github.repository_owner == 'gesslar' && env.CHANGED == 'true'
-      uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
+      uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87
       with:
         artifacts: "LICENSE,Mupdate.lua,Updater.lua,README.md"
         allowUpdates: true
