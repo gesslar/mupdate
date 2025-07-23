@@ -25,11 +25,16 @@ Written by Gesslar@ThresholdRPG 2024-06-24
 
 ]]--
 
+local function EscapePath(path)
+  -- Escape spaces and other shell-special characters
+  return path:gsub("([%s%$%`%!%*%?%[%]%{%}%(%)%|%;&<>])", "\\%1")
+end
+
 __PKGNAME__ = __PKGNAME__ or {}
 __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or {
-
   -- System information
   tag = "__PKGNAME__.AutoMupdate",
+  package_directory = getMudletHomeDir() .. "/__PKGNAME__",
   local_path = getMudletHomeDir() .. "/__PKGNAME__/Mupdate.lua",
   function_name = "__PKGNAME__:AutoMupdate",
   handler_events = {
@@ -49,13 +54,20 @@ __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or {
   }
 }
 
+function __PKGNAME__.Mupdate:Debug(message)
+  if not self.debug_mode then return end
+
+  debugc(message)
+end
+
 function __PKGNAME__.Mupdate:AutoMupdate(handle, path)
-  debugc("AutoMupdate - Package Name: __PKGNAME__, Handle: " .. handle)
+  self:Debug("AutoMupdate - Package Name: __PKGNAME__, Handle: " .. handle)
+
   if handle ~= self.tag then return end
 
   registerNamedTimer(self.tag, self.tag, 2, function()
     deleteAllNamedTimers(self.tag)
-    self.MupdateScript = require("__PKGNAME__\\Mupdate")
+    self.MupdateScript = require("__PKGNAME__/Mupdate")
     self.Mupdater = self.MupdateScript:new(self.payload)
     self.Mupdater:Start()
   end)
@@ -66,21 +78,26 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
   local newEvents = {}
   for event, label in pairs(self.handler_events) do
     if not existingHandlers[label] then
+      self:Debug("Adding new event for " .. label)
       newEvents[event] = label
+    else
+      self:Debug("Event for " .. label .. " already exists.")
     end
   end
 
   if newEvents["sysDownloadDone"] then
-  registerNamedEventHandler(
-    self.tag,
-    newEvents["sysDownloadDone"],
-    "sysDownloadDone",
-    function(event, path, size, response)
-      if path ~= self.local_path then return end
-      self:UnregisterMupdateEventHandlers()
-      self:AutoMupdate(self.tag, path)
-    end
-  )
+    registerNamedEventHandler(
+      self.tag,
+      newEvents["sysDownloadDone"],
+      "sysDownloadDone",
+      function(event, path, size, response)
+        self:Debug("Received download event for " .. path)
+
+        if path ~= self.local_path then return end
+        self:UnregisterMupdateEventHandlers()
+        self:AutoMupdate(self.tag, path)
+      end
+    )
   end
 
   if newEvents["sysDownloadError"] then
@@ -89,6 +106,9 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
       newEvents["sysDownloadError"],
       "sysDownloadError",
       function(event, err, path, actualurl)
+        self:Debug("Received download error event for " .. path)
+        self:Debug("Error: " .. err)
+
         if path ~= self.local_path then return end
         self:UnregisterMupdateEventHandlers()
       end
@@ -105,7 +125,7 @@ end
 
 function __PKGNAME__.update()
   local version = getPackageInfo("__PKGNAME__", "version")
-  cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> Initiating manual update to currently installed version "..version..".\n")
+  cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> Initiating manual update to currently installed version {version}.\n")
   cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> If there is a new version, it will be downloaded and installed.\n")
   cecho(f"<chocolate>[[ __PKGNAME__ ]]<reset> Full logging of update activity may be found in <u>Scripts</u> > <u>Errors</u>\n")
 
@@ -113,12 +133,30 @@ function __PKGNAME__.update()
 end
 
 function __PKGNAME__.Mupdate:downloadLatestMupdate()
-  local success, err = pcall(os.remove, self.local_path)
+  local packagePathExists = io.exists(self.package_directory)
+  self:Debug("Package directory " .. self.package_directory .. " exists: " .. tostring(packagePathExists))
+
+  local pathExists = io.exists(self.local_path)
+
+  if pathExists then
+    self:Debug("Path " .. self.local_path .. " exists: Removing")
+    local success, err = pcall(os.remove, self.local_path)
+    if not success then
+      self:Debug(err)
+      return
+    else
+      self:Debug("Succeeded in removing " .. self.local_path)
+    end
+  else
+    self:Debug("Path " .. self.local_path .. " does not exist.")
+  end
 
   -- Register the download event handlers
+  self:Debug("Registering download handlers.")
   self:RegisterMupdateEventHandlers()
 
   -- Initiate download
+  self:Debug("Initiating download of " .. self.mupdate_url .. " to " .. self.local_path)
   downloadFile(self.local_path, self.mupdate_url)
 end
 
