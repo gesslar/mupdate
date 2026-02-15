@@ -25,19 +25,8 @@ Written by Gesslar@ThresholdRPG 2024-06-24
 
 ]] --
 
-__PKGNAME__ = __PKGNAME__ or {}
-__PKGNAME__.Mupdate = __PKGNAME__.Mupdate or {
-  -- System information
-  tag = "__PKGNAME__.AutoMupdate",
-  packageDirectory = getMudletHomeDir() .. "/__PKGNAME__",
-  localPath = getMudletHomeDir() .. "/__PKGNAME__/Mupdate.lua",
-  functionName = "__PKGNAME__:AutoMupdate",
-  handlerEvents = {
-    sysDownloadDone = "__PKGNAME__.AutoMupdate.DownloadDone",
-    sysDownloadError = "__PKGNAME__.AutoMupdate.DownloadError"
-  },
-
-  -- Customizable settings
+local config = {
+  debugMode = true,
   mupdateUrl = "https://github.com/gesslar/Mupdate/releases/latest/download/Mupdate.lua",
   payload = {
     downloadPath = "https://github.com/gesslar/__PKGNAME__/releases/latest/download/",
@@ -45,9 +34,26 @@ __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or {
     remoteVersionFile = "__PKGNAME___version.txt",
     paramKey = "response-content-disposition",
     paramRegex = "attachment; filename=(.*)",
-    debugMode = true
-  }
+  },
 }
+
+-- This section is the script. Above is configuration. Below is where the
+-- the dragons exist. You're warned. Maybe.
+
+__PKGNAME__ = __PKGNAME__ or {}
+__PKGNAME__.Mupdate = __PKGNAME__.Mupdate or table.update({
+    -- System information
+    tag = "__PKGNAME__.AutoMupdate",
+    packageDirectory = getMudletHomeDir() .. "/__PKGNAME__",
+    localPath = getMudletHomeDir() .. "/__PKGNAME__/Mupdate.lua",
+    functionName = "__PKGNAME__:AutoMupdate",
+    downloadEvents = {
+      sysDownloadDone = "__PKGNAME__.AutoMupdate.DownloadDone",
+      sysDownloadError = "__PKGNAME__.AutoMupdate.DownloadError"
+    },
+  },
+  config or {}
+) or {}
 
 function __PKGNAME__.Mupdate:Debug(message)
   if not self.debugMode then return end
@@ -61,18 +67,30 @@ function __PKGNAME__.Mupdate:AutoMupdate(handle, path)
   if handle ~= self.tag then return end
 
   registerNamedTimer(self.tag, self.tag, 2, function()
-    deleteAllNamedTimers(self.tag)
+    deleteNamedTimer(self.tag, self.tag)
     package.loaded["__PKGNAME__/Mupdate"] = nil
     self.MupdateScript = require("__PKGNAME__/Mupdate")
     self.Mupdater = self.MupdateScript:new(self.payload)
     self.Mupdater:Start()
   end)
+
+  registerNamedEventHandler(
+    self.tag,
+    "__PKGNAME__.AutoMupdate.Uninstall",
+    "sysUninstall",
+    function(event, name)
+      if name == "__PKGNAME__" then
+        deleteAllNamedEventHandlers(self.tag)
+        deleteAllNamedTimers(self.tag)
+      end
+    end
+  )
 end
 
-function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
+function __PKGNAME__.Mupdate:RegisterDownloadHandlers()
   local existingHandlers = getNamedEventHandlers(self.tag) or {}
   local newEvents = {}
-  for event, label in pairs(self.handlerEvents) do
+  for event, label in pairs(self.downloadEvents) do
     if not existingHandlers[label] then
       self:Debug("Adding new event for " .. label)
       newEvents[event] = label
@@ -101,7 +119,7 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
       self.tag,
       newEvents["sysDownloadError"],
       "sysDownloadError",
-      function(event, err, path, actualurl)
+      function(event, err, path, actualUrl)
         self:Debug("Received download error event for " .. path)
         self:Debug("Error: " .. err)
 
@@ -113,9 +131,8 @@ function __PKGNAME__.Mupdate:RegisterMupdateEventHandlers()
 end
 
 function __PKGNAME__.Mupdate:UnregisterMupdateEventHandlers()
-  local existingHandlers = getNamedEventHandlers(self.tag) or {}
-  for _, label in pairs(self.handlerEvents) do
-    local result = deleteNamedEventHandler(self.tag, label)
+  for _, label in pairs(self.downloadEvents) do
+    deleteNamedEventHandler(self.tag, label)
   end
 end
 
@@ -149,7 +166,7 @@ function __PKGNAME__.Mupdate:downloadLatestMupdate()
 
   -- Register the download event handlers
   self:Debug("Registering download handlers.")
-  self:RegisterMupdateEventHandlers()
+  self:RegisterDownloadHandlers()
 
   -- Initiate download
   self:Debug("Initiating download of " .. self.mupdateUrl .. " to " .. self.localPath)
