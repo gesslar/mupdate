@@ -1,9 +1,9 @@
 {
-  "package": "CopierMupdateTest",
+  "package": "MupdateTestPackage",
   "title": "",
   "version": "5.0.0",
   "author": "gesslar",
-  "icon": "griffon-right.jpg",
+  "icon": "",
   "dependencies": "",
   "outputFile": true
 }

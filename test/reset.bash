@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COPIER_DIR="$SCRIPT_DIR/Copier"
+TEST_PKG_NAME="MupdateTestPackage"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_PKG_DIR="$TEST_DIR/$TEST_PKG_NAME"
 
-# Derive test Updater from the real Updater.lua by swapping URLs to localhost
-sed -e 's|https://github.com/gesslar/Mupdate/releases/latest/download/Mupdate.lua|http://localhost:18089/Mupdate.lua|' \
-    -e 's|https://github.com/gesslar/__PKGNAME__/releases/latest/download/|http://localhost:18089/|' \
-    -e '/paramKey/d' \
-    -e '/paramRegex/d' \
-    "$PROJECT_DIR/Updater.lua" > "$COPIER_DIR/src/scripts/Copier/Updater.lua"
+# shellcheck source=patch-updater.bash
+source "$TEST_DIR/patch-updater.bash"
 
-# Build old version (0.0.1) - watcher in Mudlet will auto-reinstall
-cp -vf "$COPIER_DIR/mfile_original" "$COPIER_DIR/mfile"
-pnpx @gesslar/muddy "$COPIER_DIR"
+# Patch Updater.lua to point at localhost
+patch_updater "$TEST_PKG_NAME"
+
+# Build old version (0.0.1) — Mudlet watcher will auto-reinstall
+cp -vf "$TEST_DIR/mfile_original" "$TEST_PKG_DIR/mfile"
+pnpx @gesslar/muddy "$TEST_PKG_DIR"
 
 echo
 echo "Reset to v0.0.1. Mudlet watcher should pick up the rebuild."
-echo
