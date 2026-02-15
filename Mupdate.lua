@@ -26,29 +26,29 @@
     2. In your package script, require the Mupdate module and instantiate it with the necessary options.
 
     Variables:
-    - download_path: The URL path where the package files are hosted.
-    - package_name: The name of your package.
-    - remote_version_file: The file name of the version check file on the server.
-    - param_key: (Optional) The key of the URL parameter to check for the file name.
-    - param_regex: (Optional) The regex pattern to extract the file name from the URL parameter value.
-    - debug_mode: Boolean flag to enable or disable debug mode for detailed logging.
+    - downloadPath: The URL path where the package files are hosted.
+    - packageName: The name of your package.
+    - remoteVersionFile: The file name of the version check file on the server.
+    - paramKey: (Optional) The key of the URL parameter to check for the file name.
+    - paramRegex: (Optional) The regex pattern to extract the file name from the URL parameter value.
+    - debugMode: Boolean flag to enable or disable debug mode for detailed logging.
 
        Example implementation:
 
        -- Auto Updater
        function ThreshCopy:Loaded()
            -- If using muddler
-           -- local Mupdate = require("ThreshCopy\\Mupdate")
+           -- local Mupdate = require("ThreshCopy/Mupdate")
            if not Mupdate then return end
 
            -- GitHub example
            local updater = Mupdate:new({
-               download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
-               package_name = "ThreshCopy",
-               remote_version_file = "ThreshCopy_version.txt",
-               param_key = "response-content-disposition",
-               param_regex = "attachment; filename=(.*)",
-               debug_mode = true
+               downloadPath = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
+               packageName = "ThreshCopy",
+               remoteVersionFile = "ThreshCopy_version.txt",
+               paramKey = "response-content-disposition",
+               paramRegex = "attachment; filename=(.*)",
+               debugMode = true
            })
            updater:Start()
        end
@@ -77,22 +77,22 @@
 ]] --
 
 local MupdateRequired = {
-  download_path = "string",
-  package_name = "string",
-  remote_version_file = "string",
+  downloadPath = "string",
+  packageName = "string",
+  remoteVersionFile = "string",
 }
 
 local Mupdate = {
-  download_path = nil,
-  package_name = nil,
-  package_url = nil,
-  remote_version_file = nil,
-  version_url = nil,
-  file_path = nil,
-  param_key = nil,
-  param_regex = nil,
+  downloadPath = nil,
+  packageName = nil,
+  packageUrl = nil,
+  remoteVersionFile = nil,
+  versionUrl = nil,
+  filePath = nil,
+  paramKey = nil,
+  paramRegex = nil,
   initialized = false,
-  debug_mode = false,
+  debugMode = false,
 }
 
 local function generateEventName(base, packageName, profile)
@@ -100,21 +100,20 @@ local function generateEventName(base, packageName, profile)
 end
 
 function Mupdate:Debug(text)
-  if self.debug_mode then
-    debugc("[" .. (self.package_name or "Mupdate") .. "] " .. text)
+  if self.debugMode then
+    debugc("[" .. (self.packageName or "Mupdate") .. "] " .. text)
   end
 end
 
 function Mupdate:Error(text)
-  cecho(f"<red>[ ERROR ]<reset> <DarkOrange>{(self.package_name or \"Mupdate\")}<reset> - {text}\n")
+  cecho(f "<red>[ ERROR ]<reset> <DarkOrange>{(self.packageName or \"Mupdate\")}<reset> - {text}\n")
 end
 
 function Mupdate:Info(text)
-  cecho(f"<gold>[ INFO ]<reset> <DarkOrange>{(self.package_name or \"Mupdate\")}<reset> - {text}\n")
-
+  cecho(f "<gold>[ INFO ]<reset> <DarkOrange>{(self.packageName or \"Mupdate\")}<reset> - {text}\n")
 end
 
-local function is_valid_regex(pattern)
+local function isValidRegex(pattern)
   if type(pattern) ~= "string" then
     return false, "Pattern is not a string"
   end
@@ -133,19 +132,23 @@ function Mupdate:new(options)
 
   for k, v in pairs(MupdateRequired) do
     if not options[k] then
-      error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Required field " .. k .. " is missing")
+      error("Mupdate:new() [" .. (options.packageName or "Unknown") .. "] - Required field " .. k .. " is missing")
     end
 
     if type(options[k]) ~= v then
-      error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Required field " .. k .. " is not of type " .. v)
+      error(
+        "Mupdate:new() ["
+        .. (options.packageName or "Unknown") ..
+        "] - Required field " .. k .. " is not of type " .. v
+      )
     end
   end
 
-  if options.param_regex then
-    local valid, reason = is_valid_regex(options.param_regex)
+  if options.paramRegex then
+    local valid, reason = isValidRegex(options.paramRegex)
 
     if not valid then
-      error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Invalid regex pattern: " .. reason)
+      error("Mupdate:new() [" .. (options.packageName or "Unknown") .. "] - Invalid regex pattern: " .. reason)
     end
   end
 
@@ -154,23 +157,23 @@ function Mupdate:new(options)
     me[k] = v
   end
 
-  me.file_path = getMudletHomeDir() .. "/" .. me.package_name .. "/"
-  me.temp_file_path = getMudletHomeDir() .. "/" .. me.package_name .. "_temp" .. "/"
-  me.package_url = me.download_path .. me.package_name .. ".mpackage"
-  me.version_url = me.download_path .. me.remote_version_file
+  me.filePath = getMudletHomeDir() .. "/" .. me.packageName .. "/"
+  me.tempFilePath = getMudletHomeDir() .. "/" .. me.packageName .. "_temp" .. "/"
+  me.packageUrl = me.downloadPath .. me.packageName .. ".mpackage"
+  me.versionUrl = me.downloadPath .. me.remoteVersionFile
 
-  local packageInfo = getPackageInfo(me.package_name)
+  local packageInfo = getPackageInfo(me.packageName)
 
   if not packageInfo then
-      error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " not found")
+    error("Mupdate:new() [" .. me.packageName .. "] - Package " .. me.packageName .. " not found")
   end
 
   if not packageInfo.version then
-      error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " does not have a version")
+    error("Mupdate:new() [" .. me.packageName .. "] - Package " .. me.packageName .. " does not have a version")
   end
 
-  me.current_version = packageInfo.version
-  me:Debug("Mupdate:new() - Current version: " .. me.current_version)
+  me.currentVersion = packageInfo.version
+  me:Debug("Mupdate:new() - Current version: " .. me.currentVersion)
 
   me.profile = getProfileName()
   me:Debug("Mupdate:new() - Profile: " .. me.profile)
@@ -193,7 +196,7 @@ function Mupdate:running()
 end
 
 function Mupdate:Start()
-  if(self:running()) then
+  if (self:running()) then
     tempTimer(2, function() self:Start() end)
     return
   end
@@ -209,39 +212,39 @@ function Mupdate:Start()
     error("Mupdate:Start() - Mupdate object not initialized")
   end
 
-  self.in_progress = true
+  self.inProgress = true
 
   self:registerEventHandlers()
-  self:update_scripts()
+  self:updateScripts()
 end
 
-local function url_decode(str)
+local function urlDecode(str)
   str = string.gsub(str, '+', ' ')
   str = string.gsub(str, '%%(%x%x)', function(h)
-      return string.char(tonumber(h, 16))
+    return string.char(tonumber(h, 16))
   end)
 
   return str
 end
 
-local function parse_url_params(query_string)
+local function parseUrlParams(queryString)
   local params = {}
 
-  for key_value in string.gmatch(query_string, "([^&]+)") do
-    local key, value = string.match(key_value, "([^=]+)=([^=]+)")
+  for keyValue in string.gmatch(queryString, "([^&]+)") do
+    local key, value = string.match(keyValue, "([^=]+)=([^=]+)")
 
     if key and value then
-      params[url_decode(key)] = url_decode(value)
+      params[urlDecode(key)] = urlDecode(value)
     end
   end
 
   return params
 end
 
-local function parse_url(url)
-  local protocol, host, path, query_string = string.match(url, "^(https?)://([^/]+)/([^?]*)%??(.*)")
+local function parseUrl(url)
+  local protocol, host, path, queryString = string.match(url, "^(https?)://([^/]+)/([^?]*)%??(.*)")
   local file = string.match(path, "([^/]+)$")
-  local params = parse_url_params(query_string)
+  local params = parseUrlParams(queryString)
   local parsed = {
     protocol = protocol,
     host = host,
@@ -268,13 +271,13 @@ end
 
 function Mupdate:registerEventHandlers()
   local handlerEvents = {
-    sysDownloadDone = generateEventName("DownloadDone", self.package_name, self.profile),
-    sysDownloadError = generateEventName("DownloadError", self.package_name, self.profile),
-    sysGetHttpDone = generateEventName("HTTPDone", self.package_name, self.profile),
-    sysGetHttpError = generateEventName("HTTPError", self.package_name, self.profile),
+    sysDownloadDone = generateEventName("DownloadDone", self.packageName, self.profile),
+    sysDownloadError = generateEventName("DownloadError", self.packageName, self.profile),
+    sysGetHttpDone = generateEventName("HTTPDone", self.packageName, self.profile),
+    sysGetHttpError = generateEventName("HTTPError", self.packageName, self.profile),
   }
 
-  local existingHandlers = getNamedEventHandlers(self.package_name) or {}
+  local existingHandlers = getNamedEventHandlers(self.packageName) or {}
   local newEvents = {}
 
   for event, label in pairs(handlerEvents) do
@@ -284,182 +287,186 @@ function Mupdate:registerEventHandlers()
   end
 
   if newEvents["sysDownloadDone"] then
-    registerNamedEventHandler(self.package_name, newEvents["sysDownloadDone"], "sysDownloadDone", function(event, path, size, response)
-      if not self.in_progress then return end
+    registerNamedEventHandler(self.packageName, newEvents["sysDownloadDone"], "sysDownloadDone",
+      function(event, path, size, response)
+        if not self.inProgress then return end
 
-      self:handleDownloadDone(event, path, size, response)
-    end)
+        self:handleDownloadDone(event, path, size, response)
+      end)
   end
 
   if newEvents["sysDownloadError"] then
-    registerNamedEventHandler(self.package_name, newEvents["sysDownloadError"], "sysDownloadError", function(event, err, path, actualurl)
-      if not self.in_progress then return end
+    registerNamedEventHandler(self.packageName, newEvents["sysDownloadError"], "sysDownloadError",
+      function(event, err, path, actualUrl)
+        if not self.inProgress then return end
 
-      self:handleDownloadError(event, err, path, actualurl)
-    end)
+        self:handleDownloadError(event, err, path, actualUrl)
+      end)
   end
 
   if newEvents["sysGetHttpDone"] then
-    registerNamedEventHandler(self.package_name, newEvents["sysGetHttpDone"], "sysGetHttpDone", function(event, url, response)
-      if not self.in_progress then return end
+    registerNamedEventHandler(self.packageName, newEvents["sysGetHttpDone"], "sysGetHttpDone",
+      function(event, url, response)
+        if not self.inProgress then return end
 
-      self:handleHttpGet(event, url, response)
-    end)
+        self:handleHttpGet(event, url, response)
+      end)
   end
 
   if newEvents["sysGetHttpError"] then
-    registerNamedEventHandler(self.package_name, newEvents["sysGetHttpError"], "sysGetHttpError", function(event, response, url)
-      if not self.in_progress then return end
-      self:handleHttpError(event, response, url)
-    end)
+    registerNamedEventHandler(self.packageName, newEvents["sysGetHttpError"], "sysGetHttpError",
+      function(event, response, url)
+        if not self.inProgress then return end
+        self:handleHttpError(event, response, url)
+      end)
   end
 end
 
-function Mupdate:finish_httpget(event, url, response)
-  local parsed_url = parse_url(url)
-  local expected_file = self.package_name .. "_version.txt"
+function Mupdate:finishHttpGet(event, url, response)
+  local parsedUrl = parseUrl(url)
+  local expectedFileName = self.packageName .. "_version.txt"
 
-  if self.param_key and parsed_url.params[self.param_key] then
-    if self.param_regex then
-      local matched = parsed_url.params[self.param_key]:match(self.param_regex)
+  if self.paramKey and parsedUrl.params[self.paramKey] then
+    if self.paramRegex then
+      local matched = parsedUrl.params[self.paramKey]:match(self.paramRegex)
 
-      if matched == expected_file then
-        self:Debug("Mupdate:sysGetHttpDone - Param regex matches: " .. parsed_url.params[self.param_key])
-        self:check_versions(response)
+      if matched == expectedFileName then
+        self:Debug("Mupdate:sysGetHttpDone - Param regex matches: " .. parsedUrl.params[self.paramKey])
+        self:checkVersions(response)
       else
-        self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsed_url.params[self.param_key])
-        self:Debug("Expected: " .. expected_file .. ", Got: " .. matched)
+        self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. matched)
       end
     else
-      if parsed_url.params[self.param_key] == expected_file then
-        self:Debug("Mupdate:sysGetHttpDone - Param matches: " .. parsed_url.params[self.param_key])
-        self:check_versions(response)
+      if parsedUrl.params[self.paramKey] == expectedFileName then
+        self:Debug("Mupdate:sysGetHttpDone - Param matches: " .. parsedUrl.params[self.paramKey])
+        self:checkVersions(response)
       else
-        self:Debug("Mupdate:sysGetHttpDone - Param does not match: " .. parsed_url.params[self.param_key])
-        self:Debug("Expected: " .. expected_file .. ", Got: " .. parsed_url.params[self.param_key])
+        self:Debug("Mupdate:sysGetHttpDone - Param does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. parsedUrl.params[self.paramKey])
       end
     end
-  elseif not self.param_key and string.find(parsed_url.file, expected_file) then
-    self:Debug("Mupdate:sysGetHttpDone - File name matches: " .. parsed_url.file)
-    self:check_versions(response)
+  elseif not self.paramKey and string.find(parsedUrl.file, expectedFileName) then
+    self:Debug("Mupdate:sysGetHttpDone - File name matches: " .. parsedUrl.file)
+    self:checkVersions(response)
   else
     self:Debug("Mupdate:sysGetHttpDone - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. parsed_url.file)
+    self:Debug("Parsed file: " .. parsedUrl.file)
 
-    if self.param_key then
-      self:Debug("Parsed param: " .. (parsed_url.params[self.param_key] or "nil"))
+    if self.paramKey then
+      self:Debug("Parsed param: " .. (parsedUrl.params[self.paramKey] or "nil"))
     end
   end
 end
 
-function Mupdate:fail_httpget(event, response, url)
-  local parsed_url = parse_url(url)
-  local expected_file = self.package_name .. "_version.txt"
+function Mupdate:failHttpGet(event, response, url)
+  local parsedUrl = parseUrl(url)
+  local expectedFile = self.packageName .. "_version.txt"
 
-  if self.param_key and parsed_url.params[self.param_key] then
-    if self.param_regex then
-      local matched = parsed_url.params[self.param_key]:match(self.param_regex)
+  if self.paramKey and parsedUrl.params[self.paramKey] then
+    if self.paramRegex then
+      local matched = parsedUrl.params[self.paramKey]:match(self.paramRegex)
 
-      if matched == expected_file then
-        self:Error("Failed to read version from " .. self.version_url)
+      if matched == expectedFile then
+        self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param regex matches but failed to read version")
       else
-        self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsed_url.params[self.param_key])
-        self:Debug("Expected: " .. expected_file .. ", Got: " .. matched)
+        self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Expected: " .. expectedFile .. ", Got: " .. matched)
       end
     else
-      if parsed_url.params[self.param_key] == expected_file then
-        self:Error("Failed to read version from " .. self.version_url)
+      if parsedUrl.params[self.paramKey] == expectedFile then
+        self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param matches but failed to read version")
       else
-        self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsed_url.params[self.param_key])
-        self:Debug("Expected: " .. expected_file .. ", Got: " .. parsed_url.params[self.param_key])
+        self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Expected: " .. expectedFile .. ", Got: " .. parsedUrl.params[self.paramKey])
       end
     end
-  elseif not self.param_key and string.find(parsed_url.file, expected_file) then
-    self:Error("Failed to read version from " .. self.version_url)
+  elseif not self.paramKey and string.find(parsedUrl.file, expectedFile) then
+    self:Error("Failed to read version from " .. self.versionUrl)
     self:Debug("Mupdate:sysGetHttpError - File matches but failed to read version")
   else
     self:Debug("Mupdate:sysGetHttpError - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. parsed_url.file)
+    self:Debug("Parsed file: " .. parsedUrl.file)
 
-    if self.param_key then
-      self:Debug("Parsed param: " .. (parsed_url.params[self.param_key] or "nil"))
+    if self.paramKey then
+      self:Debug("Parsed param: " .. (parsedUrl.params[self.paramKey] or "nil"))
     end
   end
 end
 
 function Mupdate:handleDownloadDone(event, path, size, response)
   -- Compare the downloaded file path with the expected file path
-  if path ~= self.temp_file_path .. self.package_name .. ".mpackage" then
+  if path ~= self.tempFilePath .. self.packageName .. ".mpackage" then
     return
   end
 
   self:Debug("Mupdate:sysDownloadDone() - Downloaded path = " .. path)
-  self:finish_download(path)
+  self:finishDownload(path)
 end
 
 function Mupdate:handleDownloadError(event, err, path, actualurl)
   -- Compare the downloaded file path with the expected file path
-  if path ~= self.temp_file_path .. self.package_name .. ".mpackage" then
+  if path ~= self.tempFilePath .. self.packageName .. ".mpackage" then
     return
   end
 
   self:Debug("Mupdate:sysDownloadError() - Error downloading: " .. err)
-  self:fail_download(err, path, actualurl)
+  self:failDownload(err, path, actualurl)
 end
 
 function Mupdate:handleHttpGet(event, url, response)
-  self:finish_httpget(event, url, response)
+  self:finishHttpGet(event, url, response)
 end
 
 function Mupdate:handleHttpError(event, response, url)
-  self:fail_httpget(event, response, url)
+  self:failHttpGet(event, response, url)
 end
 
-function Mupdate:validate_event_url(url)
-  local parsed_url = parse_url(url)
+function Mupdate:validateEventUrl(url)
+  local parsedUrl = parseUrl(url)
 
-  if self.param_key and parsed_url.params[self.param_key] then
-    return parsed_url.params[self.param_key] == self.package_name
+  if self.paramKey and parsedUrl.params[self.paramKey] then
+    return parsedUrl.params[self.paramKey] == self.packageName
   else
-    return parsed_url.file == self.remote_version_file
+    return parsedUrl.file == self.remoteVersionFile
   end
 end
 
 function Mupdate:unregisterEventHandlers()
-  local downloadHandlerLabel = generateEventName("DownloadDone", self.package_name, self.profile)
-  local downloadErrorHandlerLabel = generateEventName("DownloadError", self.package_name, self.profile)
-  local httpHandlerLabel = generateEventName("HTTPDone", self.package_name, self.profile)
-  local httpErrorHandlerLabel = generateEventName("HTTPError", self.package_name, self.profile)
+  local downloadHandlerLabel = generateEventName("DownloadDone", self.packageName, self.profile)
+  local downloadErrorHandlerLabel = generateEventName("DownloadError", self.packageName, self.profile)
+  local httpHandlerLabel = generateEventName("HTTPDone", self.packageName, self.profile)
+  local httpErrorHandlerLabel = generateEventName("HTTPError", self.packageName, self.profile)
 
-  deleteNamedEventHandler(self.package_name, downloadHandlerLabel)
-  deleteNamedEventHandler(self.package_name, downloadErrorHandlerLabel)
-  deleteNamedEventHandler(self.package_name, httpHandlerLabel)
-  deleteNamedEventHandler(self.package_name, httpErrorHandlerLabel)
+  deleteNamedEventHandler(self.packageName, downloadHandlerLabel)
+  deleteNamedEventHandler(self.packageName, downloadErrorHandlerLabel)
+  deleteNamedEventHandler(self.packageName, httpHandlerLabel)
+  deleteNamedEventHandler(self.packageName, httpErrorHandlerLabel)
 end
 
-function Mupdate:update_package()
-  lfs.mkdir(self.temp_file_path)
+function Mupdate:updatePackage()
+  lfs.mkdir(self.tempFilePath)
 
   downloadFile(
-    self.temp_file_path .. self.package_name .. ".mpackage",
-    self.package_url
+    self.tempFilePath .. self.packageName .. ".mpackage",
+    self.packageUrl
   )
 end
 
-function Mupdate:update_scripts()
-  self:Debug("Mupdate:update_scripts() - Starting script update check")
-  self:get_version_check()
+function Mupdate:updateScripts()
+  self:Debug("Mupdate:updateScripts() - Starting script update check")
+  self:getVersionCheck()
 end
 
-function Mupdate:finish_download(path)
-  self:Debug("Mupdate:finish_download() - Finished downloading: " .. path)
-  self:load_package_mpackage(path)
+function Mupdate:finishDownload(path)
+  self:Debug("Mupdate:finishDownload() - Finished downloading: " .. path)
+  self:loadPackageMpackage(path)
 end
 
-function Mupdate:load_package_mpackage(path)
-  self:Debug("Mupdate:load_package_mpackage() - Loading package mpackage from: " .. path)
+function Mupdate:loadPackageMpackage(path)
+  self:Debug("Mupdate:loadPackagMmpackage() - Loading package mpackage from: " .. path)
   self:uninstallAndInstall(path)
 end
 
@@ -470,121 +477,126 @@ function Mupdate:uninstallAndInstall(path)
   tempTimer(1, function()
     installPackage(path)
     os.remove(path)
-    lfs.rmdir(self.temp_file_path)
+    lfs.rmdir(self.tempFilePath)
     self:Info("Package updated successfully on " .. self.profile)
   end)
 end
 
-function Mupdate:fail_download(err, localfile, actualurl)
+function Mupdate:failDownload(err, localfile, actualurl)
   self:Error("Failed downloading " .. err)
-  self:Debug("Mupdate:fail_download() - " .. err)
+  self:Debug("Mupdate:failDownload() - " .. err)
 
-  local parsed_url = parse_url(actualurl)
+  local parsedUrl = parseUrl(actualurl)
 
-  if not self.param_key then
+  if not self.paramKey then
     -- No params, check if file name matches
-    if parsed_url.file == self.package_name .. ".mpackage" then
-      self:Debug("Mupdate:fail_download() - File name matches: " .. parsed_url.file)
+    if parsedUrl.file == self.packageName .. ".mpackage" then
+      self:Debug("Mupdate:failDownload() - File name matches: " .. parsedUrl.file)
     else
-      self:Debug("Mupdate:fail_download() - File name does not match: " .. parsed_url.file)
-      self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. parsed_url.file)
+      self:Debug("Mupdate:failDownload() - File name does not match: " .. parsedUrl.file)
+      self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. parsedUrl.file)
     end
   else
-      -- Params exist, check according to param_key and param_regex
-    local param_value = parsed_url.params[self.param_key]
+    -- Params exist, check according to paramKey and paramRegex
+    local paramValue = parsedUrl.params[self.paramKey]
 
-    if self.param_regex then
+    if self.paramRegex then
       -- Use regex to extract and match
-      local matched = param_value:match(self.param_regex)
+      local matched = paramValue:match(self.paramRegex)
 
-      if matched == self.package_name .. ".mpackage" then
-        self:Debug("Mupdate:fail_download() - Param regex matches: " .. param_value)
+      if matched == self.packageName .. ".mpackage" then
+        self:Debug("Mupdate:failDownload() - Param regex matches: " .. paramValue)
       else
-        self:Debug("Mupdate:fail_download() - Param regex does not match: " .. param_value)
-        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. matched)
+        self:Debug("Mupdate:failDownload() - Param regex does not match: " .. paramValue)
+        self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. matched)
       end
     else
       -- Exact match
-      if param_value == self.package_name .. ".mpackage" then
-        self:Debug("Mupdate:fail_download() - Param matches: " .. param_value)
+      if paramValue == self.packageName .. ".mpackage" then
+        self:Debug("Mupdate:failDownload() - Param matches: " .. paramValue)
       else
-        self:Debug("Mupdate:fail_download() - Param does not match: " .. param_value)
-        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. param_value)
+        self:Debug("Mupdate:failDownload() - Param does not match: " .. paramValue)
+        self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. paramValue)
       end
     end
   end
 end
 
 function Mupdate:UninstallPackage()
-  self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.package_name)
+  self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.packageName)
 
-  uninstallPackage(self.package_name)
+  uninstallPackage(self.packageName)
 
-  _G[self.package_name] = nil
+  _G[self.packageName] = nil
 end
 
-function Mupdate:get_version_check()
-  -- self:Info("Checking for updates for " .. self.package_name .. " on " .. self.profile)
-  getHTTP(self.version_url)
+function Mupdate:getVersionCheck()
+  -- self:Info("Checking for updates for " .. self.packageName .. " on " .. self.profile)
+  getHTTP(self.versionUrl)
 end
 
-function Mupdate:check_versions(version)
+function Mupdate:checkVersions(version)
   -- Extract the first line and remove any trailing newline characters
-  local first_line_version = version:match("([^\n]*)")
+  local firstLineVersion = version:match("([^\n]*)")
 
-  if first_line_version then
-    first_line_version = first_line_version:gsub("%s+$", "")
+  if firstLineVersion then
+    firstLineVersion = firstLineVersion:gsub("%s+$", "")
   end
 
-  local curr_version = self.current_version
+  local currVersion = self.currentVersion
 
-  self:Debug("Mupdate:check_versions() - Installed version: " .. curr_version .. ", Remote version: " .. first_line_version)
+  self:Debug("Mupdate:checkVersions() - Installed version: " ..
+    currVersion .. ", Remote version: " .. firstLineVersion)
 
-  if self:compare_versions(curr_version, first_line_version) then
-    self:Info("Attempting to update " .. self.package_name .. " to v" .. first_line_version)
-    self:Debug("Mupdate:check_versions() - Remote version is newer, proceeding to update package")
-    self:update_package()
+  if self:compareVersions(currVersion, firstLineVersion) then
+    self:Info("Attempting to update " .. self.packageName .. " to v" .. firstLineVersion)
+    self:Debug("Mupdate:checkVersions() - Remote version is newer, proceeding to update package")
+    self:updatePackage()
   else
-    self:Debug("Mupdate:check_versions() - Installed version is up-to-date")
+    self:Debug("Mupdate:checkVersions() - Installed version is up-to-date")
   end
 end
 
-function Mupdate:semantic_version_splitter(_version_string)
+function Mupdate:semanticVersionSplitter(versionString)
   local t = {}
 
-  for k in string.gmatch(_version_string, "([^.]+)") do
+  for k in string.gmatch(versionString, "([^.]+)") do
     table.insert(t, tonumber(k))
   end
 
-  self:Debug("Mupdate:semantic_version_splitter() - Split version string: " .. _version_string .. " -> " .. table.concat(t, ", "))
+  self:Debug(
+    "Mupdate:semanticVersionSplitter() - Split version string: " ..
+    versionString .. " -> " .. table.concat(t, ", ")
+  )
 
   return t
 end
 
-function Mupdate:compare_versions(_installed, _remote)
-  local current = self:semantic_version_splitter(_installed)
-  local remote = self:semantic_version_splitter(_remote)
+function Mupdate:compareVersions(installed, remote)
+  local splitCurrent = self:semanticVersionSplitter(installed)
+  local splitRemote = self:semanticVersionSplitter(remote)
 
-  self:Debug("Mupdate:compare_versions() - Comparing versions, Installed: " .. table.concat(current, ".") .. ", Remote: " .. table.concat(remote, "."))
+  self:Debug("Mupdate:compareVersions() - Comparing versions, Installed: " ..
+    table.concat(splitCurrent, ".") .. ", Remote: " .. table.concat(splitRemote, "."))
 
-  if current[1] < remote[1] then
-    self:Debug("Mupdate:compare_versions() - Remote version is newer")
+  if splitCurrent[1] < splitRemote[1] then
+    self:Debug("Mupdate:compareVersions() - Remote version is newer")
     return true
-  elseif current[1] == remote[1] then
-    if current[2] < remote[2] then
-      self:Debug("Mupdate:compare_versions() - Remote version is newer")
+  elseif splitCurrent[1] == splitRemote[1] then
+    if splitCurrent[2] < splitRemote[2] then
+      self:Debug("Mupdate:compareVersions() - Remote version is newer")
 
       return true
-    elseif current[2] == remote[2] then
-      if current[3] < remote[3] then
-        self:Debug("Mupdate:compare_versions() - Remote version is newer")
+    elseif splitCurrent[2] == splitRemote[2] then
+      if splitCurrent[3] < splitRemote[3] then
+        self:Debug("Mupdate:compareVersions() - Remote version is newer")
 
         return true
       end
     end
   end
 
-  self:Debug("Mupdate:compare_versions() - Installed version is up-to-date")
+  self:Debug("Mupdate:compareVersions() - Installed version is up-to-date")
 
   return false
 end
@@ -592,10 +604,10 @@ end
 function Mupdate:Cleanup()
   self:Debug("Mupdate:Cleanup() - Cleaning up")
 
-  self.in_progress = false
+  self.inProgress = false
 
   -- Unregister event handlers
-  if self.package_name then
+  if self.packageName then
     self:unregisterEventHandlers()
   end
 

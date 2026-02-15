@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "test": "bash -c test/test.bash",
+    "reset": "bash -c test/reset.bash"
+  },
+  "license": "Unlicense"
+}

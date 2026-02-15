@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "workspace.ignoreDir": [
+    "**/test"
+  ],
+  "diagnostics.disable": [
+    "duplicate-set-field"
+  ],
+  "runtime.version": "Lua 5.1"
+}
