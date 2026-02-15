@@ -4,17 +4,25 @@
 
 ## Description
 
-This module provides an auto-updater for packages within the MUD client, [Mudlet](https://github.com/Mudlet/Mudlet/). It automates the process of checking for new versions of a package, downloading updates, and installing them.
+This module provides an auto-updater for packages within the MUD client,
+[Mudlet](https://github.com/Mudlet/Mudlet/). It automates the process of
+checking for new versions of a package, downloading updates, and installing
+them.
 
 ## Acknowledgements
 
-This module was essentially ripped off from the [MUDKIP_Mud2](https://github.com/11BelowStudio/MUDKIP_Mud2) package from [@11BelowStudio](https://github.com/11BelowStudio/), and refactored.
+This module was essentially ripped off from the [MUDKIP_Mud2](https://github.com/11BelowStudio/MUDKIP_Mud2)
+package from [@11BelowStudio](https://github.com/11BelowStudio/), and
+refactored.
 
 ### Original acknowledgements on the MUDKIP_Mud2 package
 
-The core functionality of this auto-updater was adapted from the DSL PNP 4.0 Main Script by Zachary Hiland, originally shared on the [Mudlet forums](https://forums.mudlet.org/viewtopic.php?p=20504).
+The core functionality of this auto-updater was adapted from the DSL PNP 4.0
+Main Script by Zachary Hiland, originally shared on the
+[Mudlet forums](https://forums.mudlet.org/viewtopic.php?p=20504).
 
-Special thanks to [@demonnic](https://github.com/demonnic/) for providing additional Lua code and guidance on package installation.
+Special thanks to [@demonnic](https://github.com/demonnic/) for providing
+additional Lua code and guidance on package installation.
 
 ![Demo GIF](resources/demo.gif)
 
@@ -22,21 +30,29 @@ Special thanks to [@demonnic](https://github.com/demonnic/) for providing additi
 
 ### 1. Placement
 
-- **Using [Muddler](https://github.com/demonnic/muddler):** Put the `Mupdate.lua` file in your project's resources directory.
-- **Developing Directly in Mudlet:** Add the `Mupdate.lua` file to your Mudlet package's Script Group within Mudlet, and ensure that it is higher than the script that will be calling it.
+- **Using [Muddler](https://github.com/demonnic/muddler):** Put the
+  `Mupdate.lua` file in your project's resources directory.
+- **Developing Directly in Mudlet:** Add the `Mupdate.lua` file to your Mudlet
+  package's Script Group within Mudlet, and ensure that it is higher than the
+  script that will be calling it.
 
 ### 2. Integration
 
-In your package script, require the Mupdate module and instantiate it with the necessary options.
+In your package script, require the Mupdate module and instantiate it with the
+necessary options.
 
 ### Variables
 
-- `download_path`: The URL path where the package files are hosted.
-- `package_name`: The name of your package.
-- `remote_version_file`: The file name of the version check file on the server. File should be named `PACKAGE_NAME_version.txt`
-- `param_key`: (Optional) The key of the URL parameter to check for the file name.
-- `param_regex`: (Optional) The regex pattern to extract the file name from the URL parameter value.
-- `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for detailed logging. Defaults to `false`.
+- `downloadPath`: The URL path where the package files are hosted.
+- `packageName`: The name of your package.
+- `remoteVersionFile`: The file name of the version check file on the server.
+  File should be named `PACKAGE_NAME_version.txt`
+- `paramKey`: (Optional) The key of the URL parameter to check for the file
+  name.
+- `paramRegex`: (Optional) The regex pattern to extract the file name from the
+  URL parameter value.
+- `debugMode`: (Optional) Boolean flag to enable or disable debug mode for
+  detailed logging. Defaults to `false`.
 
 #### Example Implementation
 
@@ -44,12 +60,18 @@ An example implementation is provided in this repository called `Updater.lua`.
 
 ### Version Comparison
 
-- Mupdate calls `getPackageInfo(packageName)` to get your package's version number. Which must be in the SemVar format. So, this must be set on your package.
-- Mupdate downloads the version file from the same location that hosts your `.mpackage` file, and its contents must simply contain the updated version in the SemVar format.
+- Mupdate calls `getPackageInfo(packageName)` to get your package's version
+  number. Which must be in the SemVer format. So, this must be set on your
+  package.
+- Mupdate downloads the version file from the same location that hosts your
+  `.mpackage` file, and its contents must simply contain the updated version in
+  the SemVer format.
 
 ### Semantic Versioning
 
-The Mupdate system requires the use of semantic versioning (SemVer) for package version numbers. Semantic versioning follows the format MAJOR.MINOR.PATCH, where:
+The Mupdate system requires the use of semantic versioning (SemVer) for package
+version numbers. Semantic versioning follows the format `MAJOR.MINOR.PATCH`,
+where:
 
 - `MAJOR` version increments indicate incompatible API changes,
 - `MINOR` version increments add functionality in a backward-compatible manner, and
