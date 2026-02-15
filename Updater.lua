@@ -25,11 +25,6 @@ Written by Gesslar@ThresholdRPG 2024-06-24
 
 ]] --
 
-local function EscapePath(path)
-  -- Escape spaces and other shell-special characters
-  return path:gsub("([%s%$%`%!%*%?%[%]%{%}%(%)%|%;&<>])", "\\%1")
-end
-
 __PKGNAME__ = __PKGNAME__ or {}
 __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or {
   -- System information
