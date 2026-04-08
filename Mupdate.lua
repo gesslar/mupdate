@@ -37,14 +37,14 @@
      the necessary options.
 
   Variables:
-  - downloadPath: The URL path where the package files are hosted.
-  - packageName: The name of your package.
-  - remoteVersionFile: The file name of the version check file on the server.
-  - paramKey: (Optional) The key of the URL parameter to check for the file
+  - download_path: The URL path where the package files are hosted.
+  - package_name: The name of your package.
+  - remote_version_file: The file name of the version check file on the server.
+  - param_key: (Optional) The key of the URL parameter to check for the file
     name.
-  - paramRegex: (Optional) The regex pattern to extract the file name from the
+  - param_regex: (Optional) The regex pattern to extract the file name from the
     URL parameter value.
-  - debugMode: Boolean flag to enable or disable debug mode for detailed
+  - debug_mode: Boolean flag to enable or disable debug mode for detailed
     logging.
 
   Example implementation:
@@ -57,12 +57,12 @@
 
       -- GitHub example
       local updater = Mupdate:new({
-          downloadPath = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
-          packageName = "ThreshCopy",
-          remoteVersionFile = "ThreshCopy_version.txt",
-          paramKey = "response-content-disposition",
-          paramRegex = "attachment; filename=(.*)",
-          debugMode = true
+          download_path = "https://github.com/gesslar/ThreshCopy/releases/latest/download/",
+          package_name = "ThreshCopy",
+          remote_version_file = "ThreshCopy_version.txt",
+          param_key = "response-content-disposition",
+          param_regex = "attachment; filename=(.*)",
+          debug_mode = true
       })
       updater:Start()
   end
@@ -71,7 +71,7 @@
   ThreshCopy.LoadHandler = ThreshCopy.LoadHandler or registerAnonymousEventHandler("sysLoadEvent", "ThreshCopy:Loaded")
 
   Version Comparison:
-  - Mupdate calls `getPackageInfo(packageName)` to get your package's version
+  - Mupdate calls `getPackageInfo(package_name)` to get your package's version
     number. Which must be in the SemVer format. So, this must be set on your
     package.
   - Mupdate downloads the version file from the same location that hosts your
@@ -97,40 +97,40 @@
 ]] --
 
 local MupdateRequired = {
-  downloadPath = "string",
-  packageName = "string",
-  remoteVersionFile = "string",
+  download_path = "string",
+  package_name = "string",
+  remote_version_file = "string",
 }
 
 local Mupdate = {
-  downloadPath = nil,
-  packageName = nil,
+  download_path = nil,
+  package_name = nil,
   packageUrl = nil,
-  remoteVersionFile = nil,
+  remote_version_file = nil,
   versionUrl = nil,
   filePath = nil,
-  paramKey = nil,
-  paramRegex = nil,
+  param_key = nil,
+  param_regex = nil,
   initialized = false,
-  debugMode = false,
+  debug_mode = false,
 }
 
-local function generateEventName(base, packageName, profile)
-  return base .. "_" .. packageName .. "_" .. profile
+local function generateEventName(base, package_name, profile)
+  return base .. "_" .. package_name .. "_" .. profile
 end
 
 function Mupdate:Debug(text)
-  if self.debugMode then
-    debugc("[" .. (self.packageName or "Mupdate") .. "] " .. text)
+  if self.debug_mode then
+    debugc("[" .. (self.package_name or "Mupdate") .. "] " .. text)
   end
 end
 
 function Mupdate:Error(text)
-  cecho(f [["<red>[ ERROR ]<reset> <DarkOrange>{(self.packageName or "Mupdate")}<reset> - {text}\n"]])
+  cecho(f [["<red>[ ERROR ]<reset> <DarkOrange>{(self.package_name or "Mupdate")}<reset> - {text}\n"]])
 end
 
 function Mupdate:Info(text)
-  cecho(f [["<gold>[ INFO ]<reset> <DarkOrange>{(self.packageName or "Mupdate")}<reset> - {text}\n"]])
+  cecho(f [[<gold>[ INFO ]<reset> <DarkOrange>{(self.package_name or "Mupdate")}<reset> - {text}]] .. "\n")
 end
 
 local function isValidRegex(pattern)
@@ -152,23 +152,23 @@ function Mupdate:new(options)
 
   for k, v in pairs(MupdateRequired) do
     if not options[k] then
-      error("Mupdate:new() [" .. (options.packageName or "Unknown") .. "] - Required field " .. k .. " is missing")
+      error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Required field " .. k .. " is missing")
     end
 
     if type(options[k]) ~= v then
       error(
         "Mupdate:new() ["
-        .. (options.packageName or "Unknown") ..
+        .. (options.package_name or "Unknown") ..
         "] - Required field " .. k .. " is not of type " .. v
       )
     end
   end
 
-  if options.paramRegex then
-    local valid, reason = isValidRegex(options.paramRegex)
+  if options.param_regex then
+    local valid, reason = isValidRegex(options.param_regex)
 
     if not valid then
-      error("Mupdate:new() [" .. (options.packageName or "Unknown") .. "] - Invalid regex pattern: " .. reason)
+      error("Mupdate:new() [" .. (options.package_name or "Unknown") .. "] - Invalid regex pattern: " .. reason)
     end
   end
 
@@ -177,19 +177,19 @@ function Mupdate:new(options)
     me[k] = v
   end
 
-  me.filePath = getMudletHomeDir() .. "/" .. me.packageName .. "/"
-  me.tempFilePath = getMudletHomeDir() .. "/" .. me.packageName .. "_temp" .. "/"
-  me.packageUrl = me.downloadPath .. me.packageName .. ".mpackage"
-  me.versionUrl = me.downloadPath .. me.remoteVersionFile
+  me.filePath = getMudletHomeDir() .. "/" .. me.package_name .. "/"
+  me.tempFilePath = getMudletHomeDir() .. "/" .. me.package_name .. "_temp" .. "/"
+  me.packageUrl = me.download_path .. me.package_name .. ".mpackage"
+  me.versionUrl = me.download_path .. me.remote_version_file
 
-  local packageInfo = getPackageInfo(me.packageName)
+  local packageInfo = getPackageInfo(me.package_name)
 
   if not packageInfo then
-    error("Mupdate:new() [" .. me.packageName .. "] - Package " .. me.packageName .. " not found")
+    error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " not found")
   end
 
   if not packageInfo.version then
-    error("Mupdate:new() [" .. me.packageName .. "] - Package " .. me.packageName .. " does not have a version")
+    error("Mupdate:new() [" .. me.package_name .. "] - Package " .. me.package_name .. " does not have a version")
   end
 
   me.currentVersion = packageInfo.version
@@ -304,13 +304,13 @@ end
 
 function Mupdate:registerEventHandlers()
   local handlerEvents = {
-    sysDownloadDone = generateEventName("DownloadDone", self.packageName, self.profile),
-    sysDownloadError = generateEventName("DownloadError", self.packageName, self.profile),
-    sysGetHttpDone = generateEventName("HTTPDone", self.packageName, self.profile),
-    sysGetHttpError = generateEventName("HTTPError", self.packageName, self.profile),
+    sysDownloadDone = generateEventName("DownloadDone", self.package_name, self.profile),
+    sysDownloadError = generateEventName("DownloadError", self.package_name, self.profile),
+    sysGetHttpDone = generateEventName("HTTPDone", self.package_name, self.profile),
+    sysGetHttpError = generateEventName("HTTPError", self.package_name, self.profile),
   }
 
-  local existingHandlers = getNamedEventHandlers(self.packageName) or {}
+  local existingHandlers = getNamedEventHandlers(self.package_name) or {}
   local newEvents = {}
 
   for event, label in pairs(handlerEvents) do
@@ -320,7 +320,7 @@ function Mupdate:registerEventHandlers()
   end
 
   if newEvents["sysDownloadDone"] then
-    registerNamedEventHandler(self.packageName, newEvents["sysDownloadDone"], "sysDownloadDone",
+    registerNamedEventHandler(self.package_name, newEvents["sysDownloadDone"], "sysDownloadDone",
       function(event, path, size, response)
         if not self.inProgress then return end
 
@@ -329,7 +329,7 @@ function Mupdate:registerEventHandlers()
   end
 
   if newEvents["sysDownloadError"] then
-    registerNamedEventHandler(self.packageName, newEvents["sysDownloadError"], "sysDownloadError",
+    registerNamedEventHandler(self.package_name, newEvents["sysDownloadError"], "sysDownloadError",
       function(event, err, path, actualUrl)
         if not self.inProgress then return end
 
@@ -338,7 +338,7 @@ function Mupdate:registerEventHandlers()
   end
 
   if newEvents["sysGetHttpDone"] then
-    registerNamedEventHandler(self.packageName, newEvents["sysGetHttpDone"], "sysGetHttpDone",
+    registerNamedEventHandler(self.package_name, newEvents["sysGetHttpDone"], "sysGetHttpDone",
       function(event, url, response)
         if not self.inProgress then return end
 
@@ -347,7 +347,7 @@ function Mupdate:registerEventHandlers()
   end
 
   if newEvents["sysGetHttpError"] then
-    registerNamedEventHandler(self.packageName, newEvents["sysGetHttpError"], "sysGetHttpError",
+    registerNamedEventHandler(self.package_name, newEvents["sysGetHttpError"], "sysGetHttpError",
       function(event, response, url)
         if not self.inProgress then return end
         self:handleHttpError(event, response, url)
@@ -357,81 +357,81 @@ end
 
 function Mupdate:finishHttpGet(event, url, response)
   local parsedUrl = parseUrl(url)
-  local expectedFileName = self.packageName .. "_version.txt"
+  local expectedFileName = self.package_name .. "_version.txt"
 
-  if self.paramKey and parsedUrl.params[self.paramKey] then
-    if self.paramRegex then
-      local matched = parsedUrl.params[self.paramKey]:match(self.paramRegex)
+  if self.param_key and parsedUrl.params[self.param_key] then
+    if self.param_regex then
+      local matched = parsedUrl.params[self.param_key]:match(self.param_regex)
 
       if matched == expectedFileName then
-        self:Debug("Mupdate:sysGetHttpDone - Param regex matches: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Mupdate:sysGetHttpDone - Param regex matches: " .. parsedUrl.params[self.param_key])
         self:checkVersions(response)
       else
-        self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsedUrl.params[self.param_key])
         self:Debug("Expected: " .. expectedFileName .. ", Got: " .. matched)
       end
     else
-      if parsedUrl.params[self.paramKey] == expectedFileName then
-        self:Debug("Mupdate:sysGetHttpDone - Param matches: " .. parsedUrl.params[self.paramKey])
+      if parsedUrl.params[self.param_key] == expectedFileName then
+        self:Debug("Mupdate:sysGetHttpDone - Param matches: " .. parsedUrl.params[self.param_key])
         self:checkVersions(response)
       else
-        self:Debug("Mupdate:sysGetHttpDone - Param does not match: " .. parsedUrl.params[self.paramKey])
-        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Mupdate:sysGetHttpDone - Param does not match: " .. parsedUrl.params[self.param_key])
+        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. parsedUrl.params[self.param_key])
       end
     end
-  elseif not self.paramKey and string.find(parsedUrl.file, expectedFileName) then
+  elseif not self.param_key and string.find(parsedUrl.file, expectedFileName) then
     self:Debug("Mupdate:sysGetHttpDone - File name matches: " .. parsedUrl.file)
     self:checkVersions(response)
   else
     self:Debug("Mupdate:sysGetHttpDone - URL does not contain the expected parameter or file, ignoring")
     self:Debug("Parsed file: " .. parsedUrl.file)
 
-    if self.paramKey then
-      self:Debug("Parsed param: " .. (parsedUrl.params[self.paramKey] or "nil"))
+    if self.param_key then
+      self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
     end
   end
 end
 
 function Mupdate:failHttpGet(event, response, url)
   local parsedUrl = parseUrl(url)
-  local expectedFile = self.packageName .. "_version.txt"
+  local expectedFile = self.package_name .. "_version.txt"
 
-  if self.paramKey and parsedUrl.params[self.paramKey] then
-    if self.paramRegex then
-      local matched = parsedUrl.params[self.paramKey]:match(self.paramRegex)
+  if self.param_key and parsedUrl.params[self.param_key] then
+    if self.param_regex then
+      local matched = parsedUrl.params[self.param_key]:match(self.param_regex)
 
       if matched == expectedFile then
         self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param regex matches but failed to read version")
       else
-        self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsedUrl.params[self.param_key])
         self:Debug("Expected: " .. expectedFile .. ", Got: " .. matched)
       end
     else
-      if parsedUrl.params[self.paramKey] == expectedFile then
+      if parsedUrl.params[self.param_key] == expectedFile then
         self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param matches but failed to read version")
       else
-        self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsedUrl.params[self.paramKey])
-        self:Debug("Expected: " .. expectedFile .. ", Got: " .. parsedUrl.params[self.paramKey])
+        self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsedUrl.params[self.param_key])
+        self:Debug("Expected: " .. expectedFile .. ", Got: " .. parsedUrl.params[self.param_key])
       end
     end
-  elseif not self.paramKey and string.find(parsedUrl.file, expectedFile) then
+  elseif not self.param_key and string.find(parsedUrl.file, expectedFile) then
     self:Error("Failed to read version from " .. self.versionUrl)
     self:Debug("Mupdate:sysGetHttpError - File matches but failed to read version")
   else
     self:Debug("Mupdate:sysGetHttpError - URL does not contain the expected parameter or file, ignoring")
     self:Debug("Parsed file: " .. parsedUrl.file)
 
-    if self.paramKey then
-      self:Debug("Parsed param: " .. (parsedUrl.params[self.paramKey] or "nil"))
+    if self.param_key then
+      self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
     end
   end
 end
 
 function Mupdate:handleDownloadDone(event, path, size, response)
   -- Compare the downloaded file path with the expected file path
-  if path ~= self.tempFilePath .. self.packageName .. ".mpackage" then
+  if path ~= self.tempFilePath .. self.package_name .. ".mpackage" then
     return
   end
 
@@ -441,7 +441,7 @@ end
 
 function Mupdate:handleDownloadError(event, err, path, actualurl)
   -- Compare the downloaded file path with the expected file path
-  if path ~= self.tempFilePath .. self.packageName .. ".mpackage" then
+  if path ~= self.tempFilePath .. self.package_name .. ".mpackage" then
     return
   end
 
@@ -460,30 +460,30 @@ end
 function Mupdate:validateEventUrl(url)
   local parsedUrl = parseUrl(url)
 
-  if self.paramKey and parsedUrl.params[self.paramKey] then
-    return parsedUrl.params[self.paramKey] == self.packageName
+  if self.param_key and parsedUrl.params[self.param_key] then
+    return parsedUrl.params[self.param_key] == self.package_name
   else
-    return parsedUrl.file == self.remoteVersionFile
+    return parsedUrl.file == self.remote_version_file
   end
 end
 
 function Mupdate:unregisterEventHandlers()
-  local downloadHandlerLabel = generateEventName("DownloadDone", self.packageName, self.profile)
-  local downloadErrorHandlerLabel = generateEventName("DownloadError", self.packageName, self.profile)
-  local httpHandlerLabel = generateEventName("HTTPDone", self.packageName, self.profile)
-  local httpErrorHandlerLabel = generateEventName("HTTPError", self.packageName, self.profile)
+  local downloadHandlerLabel = generateEventName("DownloadDone", self.package_name, self.profile)
+  local downloadErrorHandlerLabel = generateEventName("DownloadError", self.package_name, self.profile)
+  local httpHandlerLabel = generateEventName("HTTPDone", self.package_name, self.profile)
+  local httpErrorHandlerLabel = generateEventName("HTTPError", self.package_name, self.profile)
 
-  deleteNamedEventHandler(self.packageName, downloadHandlerLabel)
-  deleteNamedEventHandler(self.packageName, downloadErrorHandlerLabel)
-  deleteNamedEventHandler(self.packageName, httpHandlerLabel)
-  deleteNamedEventHandler(self.packageName, httpErrorHandlerLabel)
+  deleteNamedEventHandler(self.package_name, downloadHandlerLabel)
+  deleteNamedEventHandler(self.package_name, downloadErrorHandlerLabel)
+  deleteNamedEventHandler(self.package_name, httpHandlerLabel)
+  deleteNamedEventHandler(self.package_name, httpErrorHandlerLabel)
 end
 
 function Mupdate:updatePackage()
   lfs.mkdir(self.tempFilePath)
 
   downloadFile(
-    self.tempFilePath .. self.packageName .. ".mpackage",
+    self.tempFilePath .. self.package_name .. ".mpackage",
     self.packageUrl
   )
 end
@@ -521,42 +521,42 @@ function Mupdate:failDownload(err, localfile, actualurl)
 
   local parsedUrl = parseUrl(actualurl)
 
-  if not self.paramKey then
+  if not self.param_key then
     -- No params, check if file name matches
-    if parsedUrl.file == self.packageName .. ".mpackage" then
+    if parsedUrl.file == self.package_name .. ".mpackage" then
       self:Debug("Mupdate:failDownload() - File name matches: " .. parsedUrl.file)
     else
       self:Debug("Mupdate:failDownload() - File name does not match: " .. parsedUrl.file)
-      self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. parsedUrl.file)
+      self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. parsedUrl.file)
     end
   else
-    -- Params exist, check according to paramKey and paramRegex
-    local paramValue = parsedUrl.params[self.paramKey]
+    -- Params exist, check according to param_key and param_regex
+    local paramValue = parsedUrl.params[self.param_key]
 
-    if self.paramRegex then
+    if self.param_regex then
       -- Use regex to extract and match
-      local matched = paramValue:match(self.paramRegex)
+      local matched = paramValue:match(self.param_regex)
 
-      if matched == self.packageName .. ".mpackage" then
+      if matched == self.package_name .. ".mpackage" then
         self:Debug("Mupdate:failDownload() - Param regex matches: " .. paramValue)
       else
         self:Debug("Mupdate:failDownload() - Param regex does not match: " .. paramValue)
-        self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. matched)
+        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. matched)
       end
     else
       -- Exact match
-      if paramValue == self.packageName .. ".mpackage" then
+      if paramValue == self.package_name .. ".mpackage" then
         self:Debug("Mupdate:failDownload() - Param matches: " .. paramValue)
       else
         self:Debug("Mupdate:failDownload() - Param does not match: " .. paramValue)
-        self:Debug("Expected: " .. self.packageName .. ".mpackage, Got: " .. paramValue)
+        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. paramValue)
       end
     end
   end
 end
 
 function Mupdate:UninstallPackage()
-  self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.packageName)
+  self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.package_name)
 
   -- First, let's pause our own uninstall handler.
   stopNamedEventHandler("__PKGNAME__", "__PKGNAME__.AutoMupdate.Uninstall")
@@ -576,9 +576,9 @@ function Mupdate:UninstallPackage()
     , true
   )
 
-  uninstallPackage(self.packageName)
+  uninstallPackage(self.package_name)
 
-  _G[self.packageName] = nil
+  _G[self.package_name] = nil
 end
 
 function Mupdate:getVersionCheck()
@@ -599,7 +599,7 @@ function Mupdate:checkVersions(version)
     currVersion .. ", Remote version: " .. firstLineVersion)
 
   if self:compareVersions(currVersion, firstLineVersion) then
-    self:Info("Attempting to update " .. self.packageName .. " to v" .. firstLineVersion)
+    self:Info("Attempting to update " .. self.package_name .. " to v" .. firstLineVersion)
     self:Debug("Mupdate:checkVersions() - Remote version is newer, proceeding to update package")
     self:updatePackage()
   else
@@ -657,7 +657,7 @@ function Mupdate:Cleanup()
   self.inProgress = false
 
   -- Unregister event handlers
-  if self.packageName then
+  if self.package_name then
     self:unregisterEventHandlers()
   end
 

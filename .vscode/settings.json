@@ -1,6 +1,7 @@
 {
   "Lua.workspace.library": [
-    "/home/gesslar/.config/Code/User/globalStorage/delwing.mudlet-scripts-sdk/docs"
+    "/home/gesslar/.config/Code/User/globalStorage/delwing.mudlet-scripts-sdk/docs",
+    "/home/gesslar/.config/Code/User/globalStorage/delwing.mudlet-scripts-sdk\\docs"
   ],
   "Lua.workspace.useGitIgnore": true,
   "Lua.workspace.ignoreDir": [

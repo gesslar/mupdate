@@ -14,26 +14,26 @@ customize the settings for Mupdate to work properly.
 The Customizable settings are:
   mupdateUrl: The URL to download the latest version of Mupdate
   payload: A table of settings for Mupdate
-    downloadPath: The URL to download the latest version of the package
-    packageName: The name of the package
-    remoteVersionFile: The name of the file that contains the version
-    paramKey: (optional) The key to look for in the headers
-    paramRegex: (optional) The regex to use to extract the filename from the headers
-    debugMode: (optional) Whether to print debug messages
+    download_path: The URL to download the latest version of the package
+    package_name: The name of the package
+    remote_version_file: The name of the file that contains the version
+    param_key: (optional) The key to look for in the headers
+    param_regex: (optional) The regex to use to extract the filename from the headers
+    debug_mode: (optional) Whether to print debug messages
 
 Written by Gesslar@ThresholdRPG 2024-06-24
 
 ]] --
 
 local config = {
-  debugMode = true,
+  debug_mode = true,
   mupdateUrl = "https://github.com/gesslar/Mupdate/releases/latest/download/Mupdate.lua",
   payload = {
-    downloadPath = "https://github.com/gesslar/__PKGNAME__/releases/latest/download/",
-    packageName = "__PKGNAME__",
-    remoteVersionFile = "__PKGNAME___version.txt",
-    paramKey = "response-content-disposition",
-    paramRegex = "attachment; filename=(.*)",
+    download_path = "https://github.com/gesslar/__PKGNAME__/releases/latest/download/",
+    package_name = "__PKGNAME__",
+    remote_version_file = "__PKGNAME___version.txt",
+    param_key = "response-content-disposition",
+    param_regex = "attachment; filename=(.*)",
   },
 }
 
@@ -56,7 +56,7 @@ __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or table.update({
 ) or {}
 
 function __PKGNAME__.Mupdate:Debug(message)
-  if not self.debugMode then return end
+  if not self.debug_mode then return end
 
   debugc(message)
 end

@@ -13,7 +13,7 @@ patch_updater "$TEST_PKG_NAME"
 
 # Build old version (0.0.1) — Mudlet watcher will auto-reinstall
 cp -vf "$TEST_DIR/mfile_original" "$TEST_PKG_DIR/mfile"
-pnpx @gesslar/muddy "$TEST_PKG_DIR"
+npx @gesslar/muddy "$TEST_PKG_DIR"
 
 echo
 echo "Reset to v0.0.1. Mudlet watcher should pick up the rebuild."
