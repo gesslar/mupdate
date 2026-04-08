@@ -43,15 +43,15 @@ necessary options.
 
 ### Variables
 
-- `downloadPath`: The URL path where the package files are hosted.
-- `packageName`: The name of your package.
-- `remoteVersionFile`: The file name of the version check file on the server.
+- `download_path`: The URL path where the package files are hosted.
+- `package_name`: The name of your package.
+- `remote_version_file`: The file name of the version check file on the server.
   File should be named `PACKAGE_NAME_version.txt`
-- `paramKey`: (Optional) The key of the URL parameter to check for the file
+- `param_key`: (Optional) The key of the URL parameter to check for the file
   name.
-- `paramRegex`: (Optional) The regex pattern to extract the file name from the
+- `param_regex`: (Optional) The regex pattern to extract the file name from the
   URL parameter value.
-- `debugMode`: (Optional) Boolean flag to enable or disable debug mode for
+- `debug_mode`: (Optional) Boolean flag to enable or disable debug mode for
   detailed logging. Defaults to `false`.
 
 #### Example Implementation
@@ -60,7 +60,7 @@ An example implementation is provided in this repository called `Updater.lua`.
 
 ### Version Comparison
 
-- Mupdate calls `getPackageInfo(packageName)` to get your package's version
+- Mupdate calls `getPackageInfo(package_name)` to get your package's version
   number. Which must be in the SemVer format. So, this must be set on your
   package.
 - Mupdate downloads the version file from the same location that hosts your

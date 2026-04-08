@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/)
-- [muddy](https://github.com/gesslar/muddy) (`pnpx @gesslar/muddy`)
+- [muddy](https://github.com/gesslar/muddy) (`npx @gesslar/muddy`)
 - [Mudlet](https://www.mudlet.org/) with a profile open
 
 ## Local Integration Testing

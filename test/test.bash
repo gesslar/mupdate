@@ -18,7 +18,7 @@ patch_updater "$TEST_PKG_NAME"
 
 # Build new version (5.0.0) — this is what the server will serve
 cp -vf "$TEST_DIR/mfile_new_version" "$TEST_PKG_DIR/mfile"
-pnpx @gesslar/muddy "$TEST_PKG_DIR"
+npx @gesslar/muddy "$TEST_PKG_DIR"
 
 # Read built package name from muddy output
 PACKAGE_NAME=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$TEST_PKG_DIR/.output','utf8')).name)")
@@ -35,7 +35,7 @@ echo
 
 # Build old version (0.0.1) — install this in Mudlet
 cp -vf "$TEST_DIR/mfile_original" "$TEST_PKG_DIR/mfile"
-pnpx @gesslar/muddy "$TEST_PKG_DIR"
+npx @gesslar/muddy "$TEST_PKG_DIR"
 
 echo
 echo "============================================"
