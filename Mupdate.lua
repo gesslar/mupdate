@@ -644,7 +644,7 @@ function Mupdate:semanticVersionSplitter(versionString)
   end
 
   for id in prerelease:gmatch("([^.]+)") do
-    table.insert(t.prerelease, tonumber(id) or id)
+    table.insert(t.prerelease, id:match("^%d+$") and tonumber(id) or id)
   end
 
   self:Debug(
