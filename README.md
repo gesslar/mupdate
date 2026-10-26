@@ -30,7 +30,7 @@ additional Lua code and guidance on package installation.
 
 ### 1. Placement
 
-- **Using [Muddler](https://github.com/demonnic/muddler):** Put the
+- **Using [muddy](https://github.com/gesslar/muddy) or [Muddler](https://github.com/demonnic/muddler):** Put the
   `Mupdate.lua` file in your project's resources directory.
 - **Developing Directly in Mudlet:** Add the `Mupdate.lua` file to your Mudlet
   package's Script Group within Mudlet, and ensure that it is higher than the
