@@ -52,13 +52,13 @@ describe("Mupdate:new()", function()
       return pcall(Mupdate.new, Mupdate, H.options({ param_key = "k", param_regex = pattern }))
     end
 
-    for _, pattern in ipairs({ "filename=(.*", "(.*))", "abc%", "[abc", "[^", "%b(", "%fx" }) do
+    for _, pattern in ipairs({ "filename=(.*", "(.*))", "abc%", "[abc", "[^", "%b(", "%fx", "%1", "%0", "(a)%2", "(a%1)" }) do
       it("rejects the malformed pattern " .. pattern, function()
         assert.is_false(accepts(pattern))
       end)
     end
 
-    for _, pattern in ipairs({ "%((.-)%)", "[]x]", "[^]]", "[%]]", "%b()", "%f[%w]%w+", "a-z?b*c+", "" }) do
+    for _, pattern in ipairs({ "%((.-)%)", "[]x]", "[^]]", "[%]]", "%b()", "%f[%w]%w+", "a-z?b*c+", "", "(a)%1", "(a)(b)%2%1", "[%1]" }) do
       it("accepts the valid pattern " .. pattern, function()
         assert.is_true(accepts(pattern))
       end)

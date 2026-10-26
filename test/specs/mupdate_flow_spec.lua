@@ -164,6 +164,16 @@ describe("Mupdate update run", function()
       assert.is_false(H.locked())
     end)
 
+    it("only falls back for the exact URL it requested, not a same-named file elsewhere", function()
+      start(with(github, { remote_version_file = "version.txt" }))
+      respond("https://other.example/version.txt", "9.9.9")
+      raiseEvent("sysGetHttpError", "404 Not Found", "https://other.example/version.txt")
+
+      assert.equals(0, H.callCount("downloadFile"))
+      assert.equals("", H.output())
+      assert.is_true(H.locked())
+    end)
+
     it("lets the parameter decide when present, whatever the file name says", function()
       start(github)
       respond(versionUrl .. "?response-content-disposition=attachment%3B%20filename%3DOtherPkg_version.txt", "9.9.9")

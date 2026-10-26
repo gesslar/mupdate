@@ -145,7 +145,9 @@ local function isValidRegex(pattern)
     return false, "Pattern is not a string"
   end
 
-  local depth, i = 0, 1
+  -- Open captures, innermost last, and which numbered captures have closed.
+  local open, closed, count = {}, {}, 0
+  local i = 1
 
   while i <= #pattern do
     local c = pattern:sub(i, i)
@@ -161,6 +163,12 @@ local function isValidRegex(pattern)
         end
 
         i = i + 4
+      elseif class:match("%d") then
+        if not closed[tonumber(class)] then
+          return false, "invalid capture index %" .. class
+        end
+
+        i = i + 2
       elseif class == "f" then
         if pattern:sub(i + 2, i + 2) ~= "[" then
           return false, "missing '[' after '%f' in pattern"
@@ -187,21 +195,22 @@ local function isValidRegex(pattern)
 
       i = j + 1
     elseif c == "(" then
-      depth = depth + 1
+      count = count + 1
+      table.insert(open, count)
       i = i + 1
     elseif c == ")" then
-      if depth == 0 then
+      if #open == 0 then
         return false, "invalid pattern capture"
       end
 
-      depth = depth - 1
+      closed[table.remove(open)] = true
       i = i + 1
     else
       i = i + 1
     end
   end
 
-  if depth > 0 then
+  if #open > 0 then
     return false, "unfinished capture"
   end
 
@@ -424,7 +433,7 @@ function Mupdate:registerEventHandlers()
 end
 
 function Mupdate:finishHttpGet(event, url, response)
-  if not self:urlIsFor(url, self.remote_version_file) then
+  if not self:urlIsFor(url, self.remote_version_file, self.versionUrl) then
     self:Debug("Mupdate:sysGetHttpDone - Not our version file, ignoring")
     return
   end
@@ -434,7 +443,7 @@ function Mupdate:finishHttpGet(event, url, response)
 end
 
 function Mupdate:failHttpGet(event, response, url)
-  if not self:urlIsFor(url, self.remote_version_file) then
+  if not self:urlIsFor(url, self.remote_version_file, self.versionUrl) then
     self:Debug("Mupdate:sysGetHttpError - Not our version file, ignoring")
     return
   end
@@ -472,23 +481,33 @@ function Mupdate:handleHttpError(event, response, url)
   self:failHttpGet(event, response, url)
 end
 
--- Whether `url` refers to `fileName`. GitHub redirects release downloads to
--- a URL that carries the file name in a parameter, which param_key and
--- param_regex extract. A URL without that parameter, as when the file is
--- served directly, is matched on its own file name instead.
-function Mupdate:urlIsFor(url, fileName)
+-- Whether `url` is the response for `fileName`, requested from `requestUrl`.
+-- GitHub redirects release downloads to a URL that carries the file name in
+-- a parameter, which param_key and param_regex extract. Without param_key,
+-- the URL's own file name is compared.
+--
+-- With param_key set, a URL lacking the parameter means the file was served
+-- directly, so it must be the URL we requested: every script's HTTP events
+-- reach this handler, and a common name like version.txt could otherwise
+-- match someone else's request.
+function Mupdate:urlIsFor(url, fileName, requestUrl)
   local parsedUrl = self:parseUrl(url)
   local paramValue = self.param_key and parsedUrl.params[self.param_key]
+
+  if self.param_key and not paramValue then
+    self:Debug("Mupdate:urlIsFor() - Expected: " .. requestUrl .. ", Got: " .. url)
+
+    return url == requestUrl
+  end
+
   local found
 
-  if paramValue then
-    if self.param_regex then
-      found = paramValue:match(self.param_regex)
-    else
-      found = paramValue
-    end
-  else
+  if not paramValue then
     found = parsedUrl.file
+  elseif self.param_regex then
+    found = paramValue:match(self.param_regex)
+  else
+    found = paramValue
   end
 
   self:Debug("Mupdate:urlIsFor() - Expected: " .. fileName .. ", Got: " .. tostring(found))
@@ -560,7 +579,7 @@ function Mupdate:failDownload(err, localfile, actualurl)
   self:Debug("Mupdate:failDownload() - " .. err)
 
   if self.debug_mode then
-    local ours = self:urlIsFor(actualurl, self.package_name .. ".mpackage")
+    local ours = self:urlIsFor(actualurl, self.package_name .. ".mpackage", self.packageUrl)
     self:Debug("Mupdate:failDownload() - URL is for our package: " .. tostring(ours))
   end
 
