@@ -1,10 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
-  "workspace.ignoreDir": [
-    "**/test"
-  ],
-  "diagnostics.disable": [
-    "duplicate-set-field"
-  ],
-  "runtime.version": "Lua 5.1"
+  "runtime": {
+    "version": "Lua 5.1"
+  },
+  "workspace": {
+    "library": [
+      "$HOME/.config/Code/User/globalStorage/delwing.mudlet-scripts-sdk/docs",
+      "$HOME/.config/VSCodium/User/globalStorage/delwing.mudlet-scripts-sdk/docs"
+    ],
+    "ignoreDir": [
+      "**/test"
+    ],
+    "useGitIgnore": true
+  },
+  "diagnostics": {
+    "disable": [
+      "duplicate-set-field"
+    ]
+  }
 }
