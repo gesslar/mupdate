@@ -26,7 +26,7 @@
   on package installation.
 
   Instructions for Use:
-  1. If you are using muddler/muddy, put the file in your project's resources
+  1. If you are using muddy/muddler, put the file in your project's resources
      directory.
 
      If you are developing directly in Mudlet, add the file to your Mudlet
@@ -51,7 +51,7 @@
 
   -- Auto Updater
   function ThreshCopy:Loaded()
-      -- If using muddler
+      -- If using muddy/muddler
       -- local Mupdate = require("ThreshCopy/Mupdate")
       if not Mupdate then return end
 
