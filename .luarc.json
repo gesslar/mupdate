@@ -16,6 +16,7 @@
   "diagnostics": {
     "disable": [
       "duplicate-set-field"
-    ]
+    ],
+    "ignoredFiles": "Disable"
   }
 }

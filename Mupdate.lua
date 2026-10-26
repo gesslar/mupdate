@@ -137,15 +137,72 @@ function Mupdate:Info(text)
   cecho(f [[<gold>[ INFO ]<reset> <DarkOrange>{(self.package_name or "Mupdate")}<reset> - {text}]] .. "\n")
 end
 
+-- Lua only reports a malformed pattern when matching reaches the bad part, so
+-- trying it against a sample string can't catch every mistake. Walk the
+-- pattern instead and check the pieces Lua would reject.
 local function isValidRegex(pattern)
   if type(pattern) ~= "string" then
     return false, "Pattern is not a string"
   end
 
-  local success, err = pcall(function() return pattern:match("") end)
+  local depth, i = 0, 1
 
-  if not success then
-    return false, "Invalid regex pattern: " .. err
+  while i <= #pattern do
+    local c = pattern:sub(i, i)
+
+    if c == "%" then
+      local class = pattern:sub(i + 1, i + 1)
+
+      if class == "" then
+        return false, "pattern ends with '%'"
+      elseif class == "b" then
+        if #pattern < i + 3 then
+          return false, "missing arguments to '%b'"
+        end
+
+        i = i + 4
+      elseif class == "f" then
+        if pattern:sub(i + 2, i + 2) ~= "[" then
+          return false, "missing '[' after '%f' in pattern"
+        end
+
+        i = i + 2
+      else
+        i = i + 2
+      end
+    elseif c == "[" then
+      local j = i + 1
+
+      if pattern:sub(j, j) == "^" then j = j + 1 end
+      -- A ']' straight after the opening bracket is a literal member.
+      if pattern:sub(j, j) == "]" then j = j + 1 end
+
+      while pattern:sub(j, j) ~= "]" do
+        if j > #pattern then
+          return false, "missing ']'"
+        end
+
+        j = j + (pattern:sub(j, j) == "%" and 2 or 1)
+      end
+
+      i = j + 1
+    elseif c == "(" then
+      depth = depth + 1
+      i = i + 1
+    elseif c == ")" then
+      if depth == 0 then
+        return false, "invalid pattern capture"
+      end
+
+      depth = depth - 1
+      i = i + 1
+    else
+      i = i + 1
+    end
+  end
+
+  if depth > 0 then
+    return false, "unfinished capture"
   end
 
   return true, ""
@@ -229,6 +286,13 @@ function Mupdate:Start()
     "sysUninstall",
     function(event, name)
       if name == package_name then
+        -- Only the run that holds the lock is in progress, so this never
+        -- releases another package's lock.
+        if self.inProgress then
+          self:Cleanup()
+        end
+
+        -- Also cancels a retry still waiting for the lock.
         deleteAllNamedEventHandlers(package_name)
         deleteAllNamedTimers(package_name)
       end
@@ -236,7 +300,9 @@ function Mupdate:Start()
   )
 
   if self:running() then
-    tempTimer(2, function() self:Start() end)
+    registerNamedTimer(package_name, package_name .. ".AutoMupdate.Retry", 2, function()
+      self:Start()
+    end)
     return
   end
 
@@ -282,7 +348,7 @@ end
 function Mupdate:parseUrl(url)
   local protocol, host, path, queryString = string.match(url, "^(https?)://([^/]+)/([^?]*)%??(.*)")
   local file = string.match(path or "", "([^/]+)$")
-  local params = parseUrlParams(queryString)
+  local params = parseUrlParams(queryString or "")
   local parsed = {
     protocol = protocol,
     host = host,
@@ -358,80 +424,24 @@ function Mupdate:registerEventHandlers()
 end
 
 function Mupdate:finishHttpGet(event, url, response)
-  local parsedUrl = self:parseUrl(url)
-  local expectedFileName = self.remote_version_file
-
-  if self.param_key and parsedUrl.params[self.param_key] then
-    if self.param_regex then
-      local matched = parsedUrl.params[self.param_key]:match(self.param_regex)
-
-      if matched == expectedFileName then
-        self:Debug("Mupdate:sysGetHttpDone - Param regex matches: " .. parsedUrl.params[self.param_key])
-        self:checkVersions(response)
-      else
-        self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. tostring(matched))
-      end
-    else
-      if parsedUrl.params[self.param_key] == expectedFileName then
-        self:Debug("Mupdate:sysGetHttpDone - Param matches: " .. parsedUrl.params[self.param_key])
-        self:checkVersions(response)
-      else
-        self:Debug("Mupdate:sysGetHttpDone - Param does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. parsedUrl.params[self.param_key])
-      end
-    end
-  elseif not self.param_key and string.find(parsedUrl.file or "", expectedFileName, 1, true) then
-    self:Debug("Mupdate:sysGetHttpDone - File name matches: " .. parsedUrl.file)
-    self:checkVersions(response)
-  else
-    self:Debug("Mupdate:sysGetHttpDone - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. tostring(parsedUrl.file))
-
-    if self.param_key then
-      self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
-    end
+  if not self:urlIsFor(url, self.remote_version_file) then
+    self:Debug("Mupdate:sysGetHttpDone - Not our version file, ignoring")
+    return
   end
+
+  self:Debug("Mupdate:sysGetHttpDone - Received version file")
+  self:checkVersions(response)
 end
 
 function Mupdate:failHttpGet(event, response, url)
-  local parsedUrl = self:parseUrl(url)
-  local expectedFile = self.remote_version_file
-
-  if self.param_key and parsedUrl.params[self.param_key] then
-    if self.param_regex then
-      local matched = parsedUrl.params[self.param_key]:match(self.param_regex)
-
-      if matched == expectedFile then
-        self:Error("Failed to read version from " .. self.versionUrl)
-        self:Debug("Mupdate:sysGetHttpError - Param regex matches but failed to read version")
-        self:Cleanup()
-      else
-        self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFile .. ", Got: " .. tostring(matched))
-      end
-    else
-      if parsedUrl.params[self.param_key] == expectedFile then
-        self:Error("Failed to read version from " .. self.versionUrl)
-        self:Debug("Mupdate:sysGetHttpError - Param matches but failed to read version")
-        self:Cleanup()
-      else
-        self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFile .. ", Got: " .. parsedUrl.params[self.param_key])
-      end
-    end
-  elseif not self.param_key and string.find(parsedUrl.file or "", expectedFile, 1, true) then
-    self:Error("Failed to read version from " .. self.versionUrl)
-    self:Debug("Mupdate:sysGetHttpError - File matches but failed to read version")
-    self:Cleanup()
-  else
-    self:Debug("Mupdate:sysGetHttpError - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. tostring(parsedUrl.file))
-
-    if self.param_key then
-      self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
-    end
+  if not self:urlIsFor(url, self.remote_version_file) then
+    self:Debug("Mupdate:sysGetHttpError - Not our version file, ignoring")
+    return
   end
+
+  self:Error("Failed to read version from " .. self.versionUrl)
+  self:Debug("Mupdate:sysGetHttpError - " .. tostring(response))
+  self:Cleanup()
 end
 
 function Mupdate:handleDownloadDone(event, path, size, response)
@@ -462,14 +472,28 @@ function Mupdate:handleHttpError(event, response, url)
   self:failHttpGet(event, response, url)
 end
 
-function Mupdate:validateEventUrl(url)
+-- Whether `url` refers to `fileName`. GitHub redirects release downloads to
+-- a URL that carries the file name in a parameter, which param_key and
+-- param_regex extract. A URL without that parameter, as when the file is
+-- served directly, is matched on its own file name instead.
+function Mupdate:urlIsFor(url, fileName)
   local parsedUrl = self:parseUrl(url)
+  local paramValue = self.param_key and parsedUrl.params[self.param_key]
+  local found
 
-  if self.param_key and parsedUrl.params[self.param_key] then
-    return parsedUrl.params[self.param_key] == self.package_name
+  if paramValue then
+    if self.param_regex then
+      found = paramValue:match(self.param_regex)
+    else
+      found = paramValue
+    end
   else
-    return parsedUrl.file == self.remote_version_file
+    found = parsedUrl.file
   end
+
+  self:Debug("Mupdate:urlIsFor() - Expected: " .. fileName .. ", Got: " .. tostring(found))
+
+  return found == fileName
 end
 
 function Mupdate:unregisterEventHandlers()
@@ -515,11 +539,13 @@ function Mupdate:uninstallAndInstall(path)
   -- Copied out so the install doesn't depend on self surviving the delay.
   local tempFilePath = self.tempFilePath
   local profile = self.profile
+  local package_name = self.package_name
 
   tempTimer(1, function()
     installPackage(path)
     os.remove(path)
     lfs.rmdir(tempFilePath)
+    resumeNamedEventHandler(package_name, package_name .. ".AutoMupdate.Uninstall")
 
     -- The lock timeout may already have emptied self via Cleanup().
     if self.initialized then
@@ -533,39 +559,9 @@ function Mupdate:failDownload(err, localfile, actualurl)
   self:Error("Failed downloading " .. err)
   self:Debug("Mupdate:failDownload() - " .. err)
 
-  local parsedUrl = self:parseUrl(actualurl)
-
-  if not self.param_key then
-    -- No params, check if file name matches
-    if parsedUrl.file == self.package_name .. ".mpackage" then
-      self:Debug("Mupdate:failDownload() - File name matches: " .. tostring(parsedUrl.file))
-    else
-      self:Debug("Mupdate:failDownload() - File name does not match: " .. tostring(parsedUrl.file))
-      self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. tostring(parsedUrl.file))
-    end
-  else
-    -- Params exist, check according to param_key and param_regex
-    local paramValue = parsedUrl.params[self.param_key] or ""
-
-    if self.param_regex then
-      -- Use regex to extract and match
-      local matched = paramValue:match(self.param_regex)
-
-      if matched == self.package_name .. ".mpackage" then
-        self:Debug("Mupdate:failDownload() - Param regex matches: " .. paramValue)
-      else
-        self:Debug("Mupdate:failDownload() - Param regex does not match: " .. paramValue)
-        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. tostring(matched))
-      end
-    else
-      -- Exact match
-      if paramValue == self.package_name .. ".mpackage" then
-        self:Debug("Mupdate:failDownload() - Param matches: " .. paramValue)
-      else
-        self:Debug("Mupdate:failDownload() - Param does not match: " .. paramValue)
-        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. paramValue)
-      end
-    end
+  if self.debug_mode then
+    local ours = self:urlIsFor(actualurl, self.package_name .. ".mpackage")
+    self:Debug("Mupdate:failDownload() - URL is for our package: " .. tostring(ours))
   end
 
   self:Cleanup()
@@ -574,24 +570,11 @@ end
 function Mupdate:UninstallPackage()
   self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.package_name)
 
-  -- First, let's pause our own uninstall handler.
-  local package_name = self.package_name
-  stopNamedEventHandler(package_name, package_name .. ".AutoMupdate.Uninstall")
-
-  -- Create a new temporary one to re-enable it after uninstall.
-  -- Admittedly, this can be a race condition, but, an unlikely one.
-  registerAnonymousEventHandler(
-    "sysUninstall",
-    function(event, name)
-      if name == package_name then
-        resumeNamedEventHandler(package_name, package_name .. ".AutoMupdate.Uninstall")
-        return false
-      end
-
-      return true
-    end
-    , true
-  )
+  -- Pause our own uninstall handler so this uninstall doesn't tear down the
+  -- updater. uninstallAndInstall() resumes it once the new version is in;
+  -- resuming from a sysUninstall handler would let Mudlet deliver this same
+  -- event to it.
+  stopNamedEventHandler(self.package_name, self.package_name .. ".AutoMupdate.Uninstall")
 
   uninstallPackage(self.package_name)
 

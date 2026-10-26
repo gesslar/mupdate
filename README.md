@@ -1,7 +1,5 @@
 # Mupdate Auto-Updater Module
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5126e0c20c7c454a9f04ed8e5a817976)](https://app.codacy.com/gh/gesslar/mupdate/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-
 ## Description
 
 This module provides an auto-updater for packages within the MUD client,

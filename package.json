@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "test": "bash -c test/test.bash",
+    "test": "docker run --rm -e SKIP_BUILD=true -v \"$PWD\":/workspace gesslardev/mudlet-busted",
+    "test:tree": "docker run --rm -e SKIP_BUILD=true -e BUSTED_OUTPUT=treeOutput -v \"$PWD\":/workspace gesslardev/mudlet-busted",
+    "testold": "bash -c test/test.bash",
     "reset": "bash -c test/reset.bash"
   },
   "license": "0BSD"

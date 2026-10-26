@@ -1,72 +1,33 @@
-name: Create Release
+name: Release
 
 on:
-  push:
-    branches:
-      - main  # Change this to your default branch if it's not main
   pull_request:
     types: [closed]
-    branches:
-      - main  # Only trigger on pull requests to the main branch
-  workflow_dispatch:  # Allow manual trigger
+    branches: [main]
+    paths: [Mupdate.lua, Updater.lua]
 
 jobs:
-  codacy-analysis:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Run Codacy Analysis
-        uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08
-        with:
-          api-token: ${{ secrets.CO }}
-
-  create_release:
+  Release:
+    # Closing a PR without merging it also fires this event.
+    if: github.event.pull_request.merged == true && github.repository_owner == 'gesslar'
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v7
-      with:
-        fetch-depth: 2  # Fetch at least the last 2 commits
+      # The commit the merge put on main, rather than the PR's merge ref.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-    - name: Set up date and time
-      id: date
-      run: |
-        echo "DATE_TAG=$(date -u +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+      - name: Set release tag
+        id: tag
+        run: echo "date=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
 
-    - name: Check for changes in Mupdate.lua or Updater.lua
-      id: check_changes
-      run: |
-        if git diff --name-only HEAD^ HEAD | grep -qE 'Mupdate.lua|Updater.lua'; then
-          echo "CHANGED=true" >> $GITHUB_ENV
-        else
-          echo "CHANGED=false" >> $GITHUB_ENV
-        fi
-
-    - name: Create Release
-      if: github.repository_owner == 'gesslar' && env.CHANGED == 'true'
-      uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
-      with:
-        artifacts: "LICENSE.txt,Mupdate.lua,Updater.lua,README.md"
-        allowUpdates: true
-        bodyFile: "./README.md"
-        tag: ${{ env.DATE_TAG }}
-        name: Release ${{ env.DATE_TAG }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Determine if it's a merged PR or direct commit
-      id: check_pr
-      run: |
-        if [ "${{ github.event_name }}" == "push" ]; then
-          echo "IS_MERGED=false" >> $GITHUB_ENV
-        elif [ "${{ github.event.pull_request.merged }}" == "true" ]; then
-          echo "IS_MERGED=true" >> $GITHUB_ENV
-        else
-          echo "IS_MERGED=false" >> $GITHUB_ENV
-        fi
-      shell: bash
+      - uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd
+        with:
+          artifacts: "LICENSE.txt,Mupdate.lua,Updater.lua"
+          bodyFile: README.md
+          commit: ${{ github.event.pull_request.merge_commit_sha }}
+          tag: ${{ steps.tag.outputs.date }}
+          name: Release ${{ steps.tag.outputs.date }}

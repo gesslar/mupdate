@@ -6,6 +6,24 @@
 - [muddy](https://github.com/gesslar/muddy) (`npx @gesslar/muddy`)
 - [Mudlet](https://www.mudlet.org/) with a profile open
 
+## Specs
+
+The specs in `test/specs/` run inside a headless Mudlet using the
+[`gesslardev/mudlet-busted`](https://hub.docker.com/r/gesslardev/mudlet-busted)
+image, so you need Docker.
+
+```bash
+npm test            # summary
+npm run test:tree   # every test, as a tree
+```
+
+Mudlet's real event and named-timer machinery is used. `test/specs/support/harness.lua`
+replaces only the edges: a fake clock behind `tempTimer`/`killTimer` (named
+timers are built on it, so `H.advance(seconds)` fires them), recorders for the
+network, install/uninstall, package info and filesystem calls, and a wrapper
+that reports errors raised inside event handlers, which Mudlet would otherwise
+swallow.
+
 ## Local Integration Testing
 
 The test setup lets you run the full Mupdate update flow inside Mudlet against
