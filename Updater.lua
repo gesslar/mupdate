@@ -5,7 +5,7 @@ version of Mupdate and then uses it to download the latest version of the
 package, uninstalls the old version, and installs the new version.
 
 If this script has __PKGNAME__ in the name, it will be automatically translated
-to the package name when run through muddler. Else, you will have to do
+to the package name when run through muddy/muddler. Else, you will have to do
 a search/replace for your package name.
 
 This script should be able to be dropped in as-is, but you will need to
