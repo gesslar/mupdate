@@ -115,6 +115,10 @@ local Mupdate = {
   debug_mode = false,
 }
 
+-- The lock is released by Cleanup() when an update run finishes. This is only
+-- a fallback for a run that never hears back from Mudlet.
+local LOCK_TIMEOUT = 60
+
 local function generateEventName(base, package_name, profile)
   return base .. "_" .. package_name .. "_" .. profile
 end
@@ -126,7 +130,7 @@ function Mupdate:Debug(text)
 end
 
 function Mupdate:Error(text)
-  cecho(f [["<red>[ ERROR ]<reset> <DarkOrange>{(self.package_name or "Mupdate")}<reset> - {text}\n"]])
+  cecho(f [[<red>[ ERROR ]<reset> <DarkOrange>{(self.package_name or "Mupdate")}<reset> - {text}]] .. "\n")
 end
 
 function Mupdate:Info(text)
@@ -216,14 +220,17 @@ function Mupdate:running()
 end
 
 function Mupdate:Start()
+  -- Captured now because Cleanup() clears self before uninstall can happen.
+  local package_name = self.package_name
+
   registerNamedEventHandler(
-    "__PKGNAME__",
-    "__PKGNAME__.AutoMupdate.Uninstall",
+    package_name,
+    package_name .. ".AutoMupdate.Uninstall",
     "sysUninstall",
     function(event, name)
-      if name == "__PKGNAME__" then
-        deleteAllNamedEventHandlers(self.tag)
-        deleteAllNamedTimers(self.tag)
+      if name == package_name then
+        deleteAllNamedEventHandlers(package_name)
+        deleteAllNamedTimers(package_name)
       end
     end
   )
@@ -233,8 +240,7 @@ function Mupdate:Start()
     return
   end
 
-  registerNamedTimer("Mupdate", "MupdateRunning", 10, function()
-    deleteNamedTimer("Mupdate", "MupdateRunning")
+  registerNamedTimer("Mupdate", "MupdateRunning", LOCK_TIMEOUT, function()
     self:Cleanup()
   end)
 
@@ -273,9 +279,9 @@ local function parseUrlParams(queryString)
   return params
 end
 
-local function parseUrl(url)
+function Mupdate:parseUrl(url)
   local protocol, host, path, queryString = string.match(url, "^(https?)://([^/]+)/([^?]*)%??(.*)")
-  local file = string.match(path, "([^/]+)$")
+  local file = string.match(path or "", "([^/]+)$")
   local params = parseUrlParams(queryString)
   local parsed = {
     protocol = protocol,
@@ -285,18 +291,14 @@ local function parseUrl(url)
     params = params
   }
 
-  -- Uncomment the below if you also want to see the debugging output
-  -- for the parsed URL
-
-  -- Debugging output
-  debugc("Parsed URL:")
-  debugc("  Protocol: " .. (parsed.protocol or "nil"))
-  debugc("  Host: " .. (parsed.host or "nil"))
-  debugc("  Path: " .. (parsed.path or "nil"))
-  debugc("  File: " .. (parsed.file or "nil"))
+  self:Debug("Parsed URL:")
+  self:Debug("  Protocol: " .. (parsed.protocol or "nil"))
+  self:Debug("  Host: " .. (parsed.host or "nil"))
+  self:Debug("  Path: " .. (parsed.path or "nil"))
+  self:Debug("  File: " .. (parsed.file or "nil"))
 
   for key, value in pairs(parsed.params) do
-    debugc("  Param: " .. key .. " = " .. value)
+    self:Debug("  Param: " .. key .. " = " .. value)
   end
 
   return parsed
@@ -356,8 +358,8 @@ function Mupdate:registerEventHandlers()
 end
 
 function Mupdate:finishHttpGet(event, url, response)
-  local parsedUrl = parseUrl(url)
-  local expectedFileName = self.package_name .. "_version.txt"
+  local parsedUrl = self:parseUrl(url)
+  local expectedFileName = self.remote_version_file
 
   if self.param_key and parsedUrl.params[self.param_key] then
     if self.param_regex then
@@ -368,7 +370,7 @@ function Mupdate:finishHttpGet(event, url, response)
         self:checkVersions(response)
       else
         self:Debug("Mupdate:sysGetHttpDone - Param regex does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. matched)
+        self:Debug("Expected: " .. expectedFileName .. ", Got: " .. tostring(matched))
       end
     else
       if parsedUrl.params[self.param_key] == expectedFileName then
@@ -379,12 +381,12 @@ function Mupdate:finishHttpGet(event, url, response)
         self:Debug("Expected: " .. expectedFileName .. ", Got: " .. parsedUrl.params[self.param_key])
       end
     end
-  elseif not self.param_key and string.find(parsedUrl.file, expectedFileName) then
+  elseif not self.param_key and string.find(parsedUrl.file or "", expectedFileName, 1, true) then
     self:Debug("Mupdate:sysGetHttpDone - File name matches: " .. parsedUrl.file)
     self:checkVersions(response)
   else
     self:Debug("Mupdate:sysGetHttpDone - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. parsedUrl.file)
+    self:Debug("Parsed file: " .. tostring(parsedUrl.file))
 
     if self.param_key then
       self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
@@ -393,8 +395,8 @@ function Mupdate:finishHttpGet(event, url, response)
 end
 
 function Mupdate:failHttpGet(event, response, url)
-  local parsedUrl = parseUrl(url)
-  local expectedFile = self.package_name .. "_version.txt"
+  local parsedUrl = self:parseUrl(url)
+  local expectedFile = self.remote_version_file
 
   if self.param_key and parsedUrl.params[self.param_key] then
     if self.param_regex then
@@ -403,25 +405,28 @@ function Mupdate:failHttpGet(event, response, url)
       if matched == expectedFile then
         self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param regex matches but failed to read version")
+        self:Cleanup()
       else
         self:Debug("Mupdate:sysGetHttpError - Param regex does not match: " .. parsedUrl.params[self.param_key])
-        self:Debug("Expected: " .. expectedFile .. ", Got: " .. matched)
+        self:Debug("Expected: " .. expectedFile .. ", Got: " .. tostring(matched))
       end
     else
       if parsedUrl.params[self.param_key] == expectedFile then
         self:Error("Failed to read version from " .. self.versionUrl)
         self:Debug("Mupdate:sysGetHttpError - Param matches but failed to read version")
+        self:Cleanup()
       else
         self:Debug("Mupdate:sysGetHttpError - Param does not match: " .. parsedUrl.params[self.param_key])
         self:Debug("Expected: " .. expectedFile .. ", Got: " .. parsedUrl.params[self.param_key])
       end
     end
-  elseif not self.param_key and string.find(parsedUrl.file, expectedFile) then
+  elseif not self.param_key and string.find(parsedUrl.file or "", expectedFile, 1, true) then
     self:Error("Failed to read version from " .. self.versionUrl)
     self:Debug("Mupdate:sysGetHttpError - File matches but failed to read version")
+    self:Cleanup()
   else
     self:Debug("Mupdate:sysGetHttpError - URL does not contain the expected parameter or file, ignoring")
-    self:Debug("Parsed file: " .. parsedUrl.file)
+    self:Debug("Parsed file: " .. tostring(parsedUrl.file))
 
     if self.param_key then
       self:Debug("Parsed param: " .. (parsedUrl.params[self.param_key] or "nil"))
@@ -458,7 +463,7 @@ function Mupdate:handleHttpError(event, response, url)
 end
 
 function Mupdate:validateEventUrl(url)
-  local parsedUrl = parseUrl(url)
+  local parsedUrl = self:parseUrl(url)
 
   if self.param_key and parsedUrl.params[self.param_key] then
     return parsedUrl.params[self.param_key] == self.package_name
@@ -499,7 +504,7 @@ function Mupdate:finishDownload(path)
 end
 
 function Mupdate:loadPackageMpackage(path)
-  self:Debug("Mupdate:loadPackagMmpackage() - Loading package mpackage from: " .. path)
+  self:Debug("Mupdate:loadPackageMpackage() - Loading package mpackage from: " .. path)
   self:uninstallAndInstall(path)
 end
 
@@ -507,11 +512,20 @@ function Mupdate:uninstallAndInstall(path)
   self:Debug("Mupdate:uninstallAndInstall() - Uninstalling and installing: " .. path)
   self:UninstallPackage()
 
+  -- Copied out so the install doesn't depend on self surviving the delay.
+  local tempFilePath = self.tempFilePath
+  local profile = self.profile
+
   tempTimer(1, function()
     installPackage(path)
     os.remove(path)
-    lfs.rmdir(self.tempFilePath)
-    self:Info("Package updated successfully on " .. self.profile)
+    lfs.rmdir(tempFilePath)
+
+    -- The lock timeout may already have emptied self via Cleanup().
+    if self.initialized then
+      self:Info("Package updated successfully on " .. profile)
+      self:Cleanup()
+    end
   end)
 end
 
@@ -519,19 +533,19 @@ function Mupdate:failDownload(err, localfile, actualurl)
   self:Error("Failed downloading " .. err)
   self:Debug("Mupdate:failDownload() - " .. err)
 
-  local parsedUrl = parseUrl(actualurl)
+  local parsedUrl = self:parseUrl(actualurl)
 
   if not self.param_key then
     -- No params, check if file name matches
     if parsedUrl.file == self.package_name .. ".mpackage" then
-      self:Debug("Mupdate:failDownload() - File name matches: " .. parsedUrl.file)
+      self:Debug("Mupdate:failDownload() - File name matches: " .. tostring(parsedUrl.file))
     else
-      self:Debug("Mupdate:failDownload() - File name does not match: " .. parsedUrl.file)
-      self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. parsedUrl.file)
+      self:Debug("Mupdate:failDownload() - File name does not match: " .. tostring(parsedUrl.file))
+      self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. tostring(parsedUrl.file))
     end
   else
     -- Params exist, check according to param_key and param_regex
-    local paramValue = parsedUrl.params[self.param_key]
+    local paramValue = parsedUrl.params[self.param_key] or ""
 
     if self.param_regex then
       -- Use regex to extract and match
@@ -541,7 +555,7 @@ function Mupdate:failDownload(err, localfile, actualurl)
         self:Debug("Mupdate:failDownload() - Param regex matches: " .. paramValue)
       else
         self:Debug("Mupdate:failDownload() - Param regex does not match: " .. paramValue)
-        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. matched)
+        self:Debug("Expected: " .. self.package_name .. ".mpackage, Got: " .. tostring(matched))
       end
     else
       -- Exact match
@@ -553,21 +567,24 @@ function Mupdate:failDownload(err, localfile, actualurl)
       end
     end
   end
+
+  self:Cleanup()
 end
 
 function Mupdate:UninstallPackage()
   self:Debug("Mupdate:UninstallPackage() - Uninstalling package: " .. self.package_name)
 
   -- First, let's pause our own uninstall handler.
-  stopNamedEventHandler("__PKGNAME__", "__PKGNAME__.AutoMupdate.Uninstall")
+  local package_name = self.package_name
+  stopNamedEventHandler(package_name, package_name .. ".AutoMupdate.Uninstall")
 
   -- Create a new temporary one to re-enable it after uninstall.
   -- Admittedly, this can be a race condition, but, an unlikely one.
   registerAnonymousEventHandler(
     "sysUninstall",
     function(event, name)
-      if name == "__PKGNAME__" then
-        resumeNamedEventHandler("__PKGNAME__", "__PKGNAME__.AutoMupdate.Uninstall")
+      if name == package_name then
+        resumeNamedEventHandler(package_name, package_name .. ".AutoMupdate.Uninstall")
         return false
       end
 
@@ -604,57 +621,109 @@ function Mupdate:checkVersions(version)
     self:updatePackage()
   else
     self:Debug("Mupdate:checkVersions() - Installed version is up-to-date")
+    self:Cleanup()
   end
 end
 
+-- Parses MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]. Missing parts default to 0
+-- and build metadata is ignored, as SemVer says it has no bearing on order.
 function Mupdate:semanticVersionSplitter(versionString)
-  local t = {}
+  local core, prerelease = versionString:match("^v?([%d.]+)%-?([^+]*)")
 
-  for k in string.gmatch(versionString, "([^.]+)") do
-    table.insert(t, tonumber(k))
+  if not core then
+    return nil
+  end
+
+  local t = { 0, 0, 0, prerelease = {} }
+  local i = 0
+
+  for part in core:gmatch("(%d+)") do
+    i = i + 1
+    if i > 3 then break end
+    t[i] = tonumber(part)
+  end
+
+  for id in prerelease:gmatch("([^.]+)") do
+    table.insert(t.prerelease, tonumber(id) or id)
   end
 
   self:Debug(
     "Mupdate:semanticVersionSplitter() - Split version string: " ..
-    versionString .. " -> " .. table.concat(t, ", ")
+    versionString .. " -> " .. table.concat(t, ", ") ..
+    (#t.prerelease > 0 and (" pre " .. table.concat(t.prerelease, ".")) or "")
   )
 
   return t
+end
+
+-- SemVer precedence for pre-release identifiers: numeric ids compare
+-- numerically and sort before alphanumeric ones, and a longer list wins a tie.
+local function prereleaseLess(a, b)
+  for i = 1, math.max(#a, #b) do
+    local x, y = a[i], b[i]
+
+    if x == nil then return true end
+    if y == nil then return false end
+
+    if x ~= y then
+      local xn, yn = type(x) == "number", type(y) == "number"
+
+      if xn and yn then return x < y end
+      if xn ~= yn then return xn end
+
+      return x < y
+    end
+  end
+
+  return false
 end
 
 function Mupdate:compareVersions(installed, remote)
   local splitCurrent = self:semanticVersionSplitter(installed)
   local splitRemote = self:semanticVersionSplitter(remote)
 
+  if not splitCurrent or not splitRemote then
+    self:Error("Unable to compare versions, installed: " .. installed .. ", remote: " .. remote)
+
+    return false
+  end
+
   self:Debug("Mupdate:compareVersions() - Comparing versions, Installed: " ..
     table.concat(splitCurrent, ".") .. ", Remote: " .. table.concat(splitRemote, "."))
 
-  if splitCurrent[1] < splitRemote[1] then
-    self:Debug("Mupdate:compareVersions() - Remote version is newer")
-    return true
-  elseif splitCurrent[1] == splitRemote[1] then
-    if splitCurrent[2] < splitRemote[2] then
-      self:Debug("Mupdate:compareVersions() - Remote version is newer")
+  local newer = false
 
-      return true
-    elseif splitCurrent[2] == splitRemote[2] then
-      if splitCurrent[3] < splitRemote[3] then
-        self:Debug("Mupdate:compareVersions() - Remote version is newer")
+  for i = 1, 3 do
+    if splitCurrent[i] ~= splitRemote[i] then
+      newer = splitCurrent[i] < splitRemote[i]
+      break
+    end
 
-        return true
+    -- Same MAJOR.MINOR.PATCH: a release outranks any of its pre-releases.
+    if i == 3 then
+      local preCurrent, preRemote = splitCurrent.prerelease, splitRemote.prerelease
+
+      if #preCurrent > 0 and #preRemote == 0 then
+        newer = true
+      elseif #preCurrent > 0 then
+        newer = prereleaseLess(preCurrent, preRemote)
       end
     end
   end
 
-  self:Debug("Mupdate:compareVersions() - Installed version is up-to-date")
+  self:Debug("Mupdate:compareVersions() - " ..
+    (newer and "Remote version is newer" or "Installed version is up-to-date"))
 
-  return false
+  return newer
 end
 
 function Mupdate:Cleanup()
   self:Debug("Mupdate:Cleanup() - Cleaning up")
 
   self.inProgress = false
+
+  -- Release the lock so the next package waiting in Start() can run.
+  deleteNamedTimer("Mupdate", "MupdateRunning")
 
   -- Unregister event handlers
   if self.package_name then
@@ -668,6 +737,12 @@ function Mupdate:Cleanup()
 
   -- Break the metatable link
   setmetatable(self, nil)
+end
+
+-- Loaded as a Mudlet script rather than through require(), there is no
+-- caller to receive the return value, so expose it globally instead.
+if not ... then
+  _G.Mupdate = Mupdate
 end
 
 return Mupdate

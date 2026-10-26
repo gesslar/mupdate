@@ -1,6 +1,6 @@
 --[[
 
-This is the auto-updater for this package. It uses downloads the latest
+This is the auto-updater for this package. It downloads the latest
 version of Mupdate and then uses it to download the latest version of the
 package, uninstalls the old version, and installs the new version.
 
@@ -12,14 +12,15 @@ This script should be able to be dropped in as-is, but you will need to
 customize the settings for Mupdate to work properly.
 
 The Customizable settings are:
+  debug_mode: (optional) Whether this updater script prints debug messages
   mupdateUrl: The URL to download the latest version of Mupdate
   payload: A table of settings for Mupdate
     download_path: The URL to download the latest version of the package
     package_name: The name of the package
     remote_version_file: The name of the file that contains the version
-    param_key: (optional) The key to look for in the headers
-    param_regex: (optional) The regex to use to extract the filename from the headers
-    debug_mode: (optional) Whether to print debug messages
+    param_key: (optional) The key of the URL parameter to check for the file name
+    param_regex: (optional) The regex to use to extract the file name from the URL parameter value
+    debug_mode: (optional) Whether Mupdate itself prints debug messages
 
 Written by Gesslar@ThresholdRPG 2024-06-24
 
@@ -38,7 +39,7 @@ local config = {
 }
 
 -- This section is the script. Above is configuration. Below is where the
--- the dragons exist. You're warned. Maybe.
+-- dragons exist. You're warned. Maybe.
 
 __PKGNAME__ = __PKGNAME__ or {}
 __PKGNAME__.Mupdate = __PKGNAME__.Mupdate or table.update({
